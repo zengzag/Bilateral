@@ -1,14 +1,14 @@
 #include "Bilateral.h"
 #include <iostream>
 
-Bilateral::Bilateral(Mat& img):
-	imgSrc(img){}
+Bilateral::Bilateral(std::vector<Mat> img):
+	imgSrcArr(img){}
 
 Bilateral::~Bilateral()
 {
 }
 
-void Bilateral::InitGmms(std::vector<Point>& forPts, std::vector<Point>& bacPts)
+void Bilateral::InitGmms(std::vector<Point>& forPts, std::vector<Point>& bacPts , int index)
 {
 	std::vector<Point> m_forePts;      //保存前景点（去重）
 	std::vector<Point> m_backPts;      //保存背景点
@@ -33,13 +33,13 @@ void Bilateral::InitGmms(std::vector<Point>& forPts, std::vector<Point>& bacPts)
 	for (int i = 0;i<m_forePts.size();i++)
 	{
 		std::vector<int> gridPoint(6);
-		getGridPoint(m_forePts[i], gridPoint);
+		getGridPoint(index,m_forePts[i], gridPoint);
 		grid_forePts.push_back(gridPoint);
 	}
 	for (int i = 0;i<m_backPts.size();i++)
 	{
 		std::vector<int> gridPoint(6);
-		getGridPoint(m_backPts[i], gridPoint);
+		getGridPoint(index,m_backPts[i], gridPoint);
 		grid_backPts.push_back(gridPoint);
 	}
 
@@ -48,12 +48,12 @@ void Bilateral::InitGmms(std::vector<Point>& forPts, std::vector<Point>& bacPts)
 	//添加点的颜色数据
 	for (int i = 0;i<m_forePts.size();i++)
 	{
-		Vec3f color = (Vec3f)imgSrc.at<Vec3b>(m_forePts[i]);
+		Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(m_forePts[i]);
 		bgdSamples.push_back(color);
 	}
 	for (int i = 0;i<m_backPts.size();i++)
 	{
-		Vec3f color = (Vec3f)imgSrc.at<Vec3b>(m_backPts[i]);
+		Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(m_backPts[i]);
 		fgdSamples.push_back(color);
 	}
 
@@ -118,21 +118,25 @@ bool Bilateral::isPtInVector(Point pt, std::vector<Point>& points)
 void Bilateral::initGrid() {
 	Mat L(6, gridSize, CV_32SC(2), Scalar::all(0));
 	grid = L;
-	
-	int xSize = imgSrc.rows;
-	int ySize = imgSrc.cols;
-	for (int x = 0; x < xSize; x++)
+	int tSize = imgSrcArr.size();
+	int xSize = imgSrcArr[0].rows;
+	int ySize = imgSrcArr[0].cols;
+	for (int t = 0; t < tSize; t++)
 	{
-		for (int y = 0; y < ySize; y++)
+		for (int x = 0; x < xSize; x++)
 		{
-			int xNew = gridSize[1] * x / xSize ;
-			int yNew = gridSize[2] * y / ySize ;
-			Vec3b color = (Vec3b)imgSrc.at<Vec3b>(x,y);
-			int rNew = gridSize[3] * color[0] / 256;
-			int gNew = gridSize[4] * color[1] / 256;
-			int bNew = gridSize[5] * color[2] / 256;
-			int point[6] = { 0,xNew,yNew,rNew,gNew,bNew };
-			grid.at<Vec2i>(point)[0] += 1;
+			for (int y = 0; y < ySize; y++)
+			{
+				int tNew = gridSize[0] * t / tSize;
+				int xNew = gridSize[1] * x / xSize;
+				int yNew = gridSize[2] * y / ySize;
+				Vec3b color = (Vec3b)imgSrcArr[t].at<Vec3b>(x, y);
+				int rNew = gridSize[3] * color[0] / 256;
+				int gNew = gridSize[4] * color[1] / 256;
+				int bNew = gridSize[5] * color[2] / 256;
+				int point[6] = { tNew,xNew,yNew,rNew,gNew,bNew };
+				grid.at<Vec2i>(point)[0] += 1;
+			}
 		}
 	}
 }
@@ -156,7 +160,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 								//先验项
 								grid.at<Vec2i>(point)[1] = vtxIdx;
 								Vec3b color;//计算grid中顶点对应的颜色
-								color[0] = (r * 256 + 256/2) / gridSize[3];//多加0.5是为了把颜色移到方格中心
+								color[0] = (r * 256 + 256/2) / gridSize[3];//多加256/2是为了把颜色移到方格中心
 								color[1] = (g * 256 + 256/2) / gridSize[4];
 								color[2] = (b * 256 + 256/2) / gridSize[5];
 								double fromSource, toSink;
@@ -277,52 +281,58 @@ int Bilateral::calculateVtxCount() {
 	return count;
 }
 
-void Bilateral::estimateSegmentation(GCGraph<double>& graph, Mat& mask) {
+void Bilateral::estimateSegmentation(GCGraph<double>& graph, std::vector<Mat>& maskArr) {
 	graph.maxFlow();//最大流图割
 
 	Point p;
-	for (p.y = 0; p.y < mask.cols; p.y++)
+	for (int t = 0; t < maskArr.size(); t++)
 	{
-		for (p.x = 0; p.x < mask.rows; p.x++)
+		for (p.y = 0; p.y < maskArr[0].cols; p.y++)
 		{
+			for (p.x = 0; p.x < maskArr[0].rows; p.x++)
+			{
 
-			int point[6] = {0,0,0,0,0,0};
-			getGridPoint(p, point);
-			int vertex = grid.at<Vec2i>(point)[1];
-			if (graph.inSourceSegment(vertex))
-				mask.at<uchar>(p.x,p.y) = 0;
-			else
-				mask.at<uchar>(p.x, p.y) = 1;
+				int point[6] = { 0,0,0,0,0,0 };
+				getGridPoint(t, p, point);
+				int vertex = grid.at<Vec2i>(point)[1];
+				if (graph.inSourceSegment(vertex))
+					maskArr[t].at<uchar>(p.x, p.y) = 0;
+				else
+					maskArr[t].at<uchar>(p.x, p.y) = 1;
+			}
 		}
 	}
-
 }
 
-void Bilateral::getGridPoint(const Point p,int *point) {
-	point[0] = 0;
-	point[1] = gridSize[1] * p.x / imgSrc.rows;
-	point[2] = gridSize[2] * p.y / imgSrc.cols;
-	Vec3b color = (Vec3b)imgSrc.at<Vec3b>(p.x, p.y);
+void Bilateral::getGridPoint(int index, const Point p,int *point) {
+	point[0] = gridSize[0] * index / imgSrcArr.size();
+	point[1] = gridSize[1] * p.x / imgSrcArr[0].rows;
+	point[2] = gridSize[2] * p.y / imgSrcArr[0].cols;
+	Vec3b color = (Vec3b)imgSrcArr[index].at<Vec3b>(p.x, p.y);
 	point[3] = gridSize[3] * color[0] / 256;
 	point[4] = gridSize[4] * color[1] / 256;
 	point[5] = gridSize[5] * color[2] / 256;
 }
 
-void Bilateral::getGridPoint(const Point p, std::vector<int>& point) {
-	point[0] = 0;
-	point[1] = gridSize[1] * p.y / imgSrc.rows;
-	point[2] = gridSize[2] * p.x / imgSrc.cols;//x,y互换、由于p坐标存错，导致的问题。
-	Vec3b color = (Vec3b)imgSrc.at<Vec3b>(p);
+void Bilateral::getGridPoint(int index, const Point p, std::vector<int>& point) {
+	point[0] = gridSize[0] * index / imgSrcArr.size();
+	point[1] = gridSize[1] * p.y / imgSrcArr[0].rows;
+	point[2] = gridSize[2] * p.x / imgSrcArr[0].cols;//x,y互换、由于p坐标存错，导致的问题。
+	Vec3b color = (Vec3b)imgSrcArr[index].at<Vec3b>(p);
 	point[3] = gridSize[3] * color[0] / 256;
 	point[4] = gridSize[4] * color[1] / 256;
 	point[5] = gridSize[5] * color[2] / 256;
 }
 
-void Bilateral::run(Mat& mask) {
+void Bilateral::run(std::vector<Mat>& maskArr) {
 	GMM bgdGMM(bgModel), fgdGMM(fgModel);//前背景模型
 	GCGraph<double> graph;//图割
-	mask = Mat::zeros(imgSrc.rows, imgSrc.cols, CV_8UC1);
+	for (int i = 0; i < imgSrcArr.size(); i++)
+	{
+		Mat mask = Mat::zeros(imgSrcArr[0].rows, imgSrcArr[0].cols, CV_8UC1);
+		maskArr.push_back(mask);
+	}
 	initGrid();
 	constructGCGraph(bgdGMM, fgdGMM, graph);
-	estimateSegmentation(graph, mask);
+	estimateSegmentation(graph, maskArr);
 }
