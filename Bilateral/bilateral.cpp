@@ -10,10 +10,13 @@ Bilateral::~Bilateral()
 
 void Bilateral::InitGmms(std::vector<Point>& forPts, std::vector<Point>& bacPts , int index)
 {
+	double _time = static_cast<double>(getTickCount());//计时
+	
 	std::vector<Point> m_forePts;      //保存前景点（去重）
 	std::vector<Point> m_backPts;      //保存背景点
 	std::vector<Vec3f> bgdSamples;    //从背景点存储背景颜色
 	std::vector<Vec3f> fgdSamples;    //从前景点存储前景颜色
+
 
 	//清除重复的点
 	m_forePts.clear();
@@ -29,17 +32,20 @@ void Bilateral::InitGmms(std::vector<Point>& forPts, std::vector<Point>& bacPts 
 			m_backPts.push_back(bacPts[i]);
 	}
 
+	int tSize = imgSrcArr.size();
+	int xSize = imgSrcArr[0].rows;
+	int ySize = imgSrcArr[0].cols;
 	//对应grid点保存
 	for (int i = 0;i<m_forePts.size();i++)
 	{
 		std::vector<int> gridPoint(6);
-		getGridPoint(index,m_forePts[i], gridPoint);
+		getGridPoint(index,m_forePts[i], gridPoint, tSize, xSize, ySize);
 		grid_forePts.push_back(gridPoint);
 	}
 	for (int i = 0;i<m_backPts.size();i++)
 	{
 		std::vector<int> gridPoint(6);
-		getGridPoint(index,m_backPts[i], gridPoint);
+		getGridPoint(index,m_backPts[i], gridPoint,tSize, xSize, ySize);
 		grid_backPts.push_back(gridPoint);
 	}
 
@@ -103,6 +109,8 @@ void Bilateral::InitGmms(std::vector<Point>& forPts, std::vector<Point>& bacPts 
 			fgdGMM.addSample(fgdLabels.at<int>(i, 0), fgdSamples[i]);
 		fgdGMM.endLearning();
 	}
+	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
+	printf("高斯建模用时%f\n", _time);//显示时间
 }
 
 bool Bilateral::isPtInVector(Point pt, std::vector<Point>& points)
@@ -116,6 +124,8 @@ bool Bilateral::isPtInVector(Point pt, std::vector<Point>& points)
 }
 
 void Bilateral::initGrid() {
+	double _time = static_cast<double>(getTickCount());
+
 	Mat L(6, gridSize, CV_32SC(2), Scalar::all(0));
 	grid = L;
 	int tSize = imgSrcArr.size();
@@ -139,9 +149,13 @@ void Bilateral::initGrid() {
 			}
 		}
 	}
+	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
+	printf("构建grid用时%f\n", _time);//显示时间
 }
 
 void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<double>& graph) {
+	double _time = static_cast<double>(getTickCount());
+
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
 	int edgeCount = 2 * 6 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
@@ -250,7 +264,8 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 			graph.addTermWeights(grid.at<Vec2i>(point)[1], 9999, 0);
 		}
 	}
-
+	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
+	printf("图割构图用时 %f\n", _time);//显示时间
 }
 
 
@@ -282,18 +297,25 @@ int Bilateral::calculateVtxCount() {
 }
 
 void Bilateral::estimateSegmentation(GCGraph<double>& graph, std::vector<Mat>& maskArr) {
+	double _time = static_cast<double>(getTickCount());
+
 	graph.maxFlow();//最大流图割
+	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
+	printf("图割分割用时 %f\n", _time);//显示时间
 
+	double _time2 = static_cast<double>(getTickCount());
 	Point p;
-	for (int t = 0; t < maskArr.size(); t++)
+	int tSize = maskArr.size();
+	int xSize = imgSrcArr[0].rows;
+	int ySize = imgSrcArr[0].cols;
+	for (int t = 0; t < tSize; t++)
 	{
-		for (p.y = 0; p.y < maskArr[0].cols; p.y++)
+		for (p.y = 0; p.y < ySize; p.y++)
 		{
-			for (p.x = 0; p.x < maskArr[0].rows; p.x++)
+			for (p.x = 0; p.x < xSize; p.x++)
 			{
-
 				int point[6] = { 0,0,0,0,0,0 };
-				getGridPoint(t, p, point);
+				getGridPoint(t, p, point, tSize, xSize, ySize);
 				int vertex = grid.at<Vec2i>(point)[1];
 				if (graph.inSourceSegment(vertex))
 					maskArr[t].at<uchar>(p.x, p.y) = 0;
@@ -302,22 +324,24 @@ void Bilateral::estimateSegmentation(GCGraph<double>& graph, std::vector<Mat>& m
 			}
 		}
 	}
+	_time2 = (static_cast<double>(getTickCount()) - _time2) / getTickFrequency();
+	printf("grid结果传递mask用时 %f\n", _time2);//显示时间
 }
 
-void Bilateral::getGridPoint(int index, const Point p,int *point) {
-	point[0] = gridSize[0] * index / imgSrcArr.size();
-	point[1] = gridSize[1] * p.x / imgSrcArr[0].rows;
-	point[2] = gridSize[2] * p.y / imgSrcArr[0].cols;
+void Bilateral::getGridPoint(int index, const Point p,int *point, int tSize,int xSize,int ySize) {
+	point[0] = gridSize[0] * index / tSize;
+	point[1] = gridSize[1] * p.x / xSize;
+	point[2] = gridSize[2] * p.y / ySize;
 	Vec3b color = (Vec3b)imgSrcArr[index].at<Vec3b>(p.x, p.y);
 	point[3] = gridSize[3] * color[0] / 256;
 	point[4] = gridSize[4] * color[1] / 256;
 	point[5] = gridSize[5] * color[2] / 256;
 }
 
-void Bilateral::getGridPoint(int index, const Point p, std::vector<int>& point) {
-	point[0] = gridSize[0] * index / imgSrcArr.size();
-	point[1] = gridSize[1] * p.y / imgSrcArr[0].rows;
-	point[2] = gridSize[2] * p.x / imgSrcArr[0].cols;//x,y互换、由于p坐标存错，导致的问题。
+void Bilateral::getGridPoint(int index, const Point p, std::vector<int>& point, int tSize, int xSize, int ySize) {
+	point[0] = gridSize[0] * index / tSize;
+	point[1] = gridSize[1] * p.y / xSize;
+	point[2] = gridSize[2] * p.x / ySize;//x,y互换、由于p坐标存错，导致的问题。
 	Vec3b color = (Vec3b)imgSrcArr[index].at<Vec3b>(p);
 	point[3] = gridSize[3] * color[0] / 256;
 	point[4] = gridSize[4] * color[1] / 256;
