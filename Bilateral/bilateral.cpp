@@ -320,9 +320,9 @@ void Bilateral::estimateSegmentation(GCGraph<double>& graph, std::vector<Mat>& m
 				getGridPoint(t, p, point, tSize, xSize, ySize);
 				int vertex = grid.at<Vec2i>(point)[1];
 				if (graph.inSourceSegment(vertex))
-					maskArr[t].at<uchar>(p.x, p.y) = 1;
-				else
 					maskArr[t].at<uchar>(p.x, p.y) = 0;
+				else
+					maskArr[t].at<uchar>(p.x, p.y) = 1;
 			}
 		}
 	}
