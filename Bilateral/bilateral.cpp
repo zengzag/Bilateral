@@ -46,6 +46,10 @@ void Bilateral::InitGmms(Mat& mask, int index)
 				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
 				grid.at<Vec< int, 3 > >(point)[2] = -1;
 			}
+			else {
+				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
+				fgdSamples.push_back(color);
+			}
 		}
 	}
 
