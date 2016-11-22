@@ -310,17 +310,19 @@ void Bilateral::estimateSegmentation(GCGraph<double>& graph, std::vector<Mat>& m
 	int ySize = imgSrcArr[0].cols;
 	for (int t = 0; t < tSize; t++)
 	{
-		for (p.y = 0; p.y < ySize; p.y++)
+		for (int y = 0; y < ySize; y++)
 		{
-			for (p.x = 0; p.x < xSize; p.x++)
+#pragma omp parallel for
+			for (int x = 0; x < xSize; x++)
 			{
+				Point p(x, y);
 				int point[6] = { 0,0,0,0,0,0 };
 				getGridPoint(t, p, point, tSize, xSize, ySize);
 				int vertex = grid.at<Vec2i>(point)[1];
 				if (graph.inSourceSegment(vertex))
-					maskArr[t].at<uchar>(p.x, p.y) = 0;
-				else
 					maskArr[t].at<uchar>(p.x, p.y) = 1;
+				else
+					maskArr[t].at<uchar>(p.x, p.y) = 0;
 			}
 		}
 	}
