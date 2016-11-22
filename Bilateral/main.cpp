@@ -13,8 +13,6 @@ using namespace cv;
 VideoCapture video;
 VideoWriter videowriter;
 std::vector<Mat> imgSrcArr, maskArr;
-//Mat imgShow; //原图与展示图
-
 
 const Scalar RED = Scalar(0, 0, 255);
 const Scalar PINK = Scalar(230, 130, 255);
@@ -245,7 +243,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("image/parkour.avi");
+	video.open("image/paragliding.avi");
 	videowriter.open("image/output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 3; times++)
@@ -301,8 +299,9 @@ int main() {
 				}
 				maskArr.clear();
 				printf("第%d段分割结束\n", times + 1);
+
+				break;
 			}
-			break;
 		}
 	}
 
