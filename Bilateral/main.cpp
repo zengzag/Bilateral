@@ -243,13 +243,13 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("image/paragliding.avi");
-	//videowriter.open("image/output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
+	video.open("image/parkour.avi");
+	videowriter.open("image/output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
-		int key = 0;
-		for (int i = 0;i < 1;i++) {
+		int key = 5;
+		for (int i = 0;i < 9;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
@@ -286,8 +286,8 @@ int main() {
 					Mat maskBlur, lastImg;
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
-					imshow("目标", lastImg);//显示结果
-					//videowriter << lastImg;
+				//	imshow("目标", lastImg);//显示结果
+					videowriter << lastImg;
 				}
 
 				//清除容器，释放内存

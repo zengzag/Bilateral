@@ -15,7 +15,7 @@ public:
 	Mat bgModel, fgModel;	//前背景高斯模型
 	Mat keyMask; //关键帧的mask
 	Mat grid;	//升维，平均取点，得到的grid。6维数组，保存顶点值与邻近像素点总数。
-	const int gridSize[6] = { 1,20,40,16,16,16 };	//grid各个维度的大小,按顺序来为：t,x,y,r,g,b。
+	const int gridSize[6] = { 3,20,40,16,16,16 };	//grid各个维度的大小,按顺序来为：t,x,y,r,g,b。
 public:
 	Bilateral(std::vector<Mat> img);
 	~Bilateral();
@@ -23,6 +23,7 @@ public:
 	void run(std::vector<Mat>& );
 private:
 	void initGrid();
+	void nextGMMs();
 	void constructGCGraph(const GMM&, const GMM&, GCGraph<double>& graph);
 	int calculateVtxCount();
 	void estimateSegmentation(GCGraph<double>&, std::vector<Mat>& );
