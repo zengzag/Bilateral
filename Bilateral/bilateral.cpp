@@ -407,13 +407,11 @@ void Bilateral::run(std::vector<Mat>& maskArr) {
 		Mat mask = Mat::zeros(imgSrcArr[0].rows, imgSrcArr[0].cols, CV_8UC1);
 		maskArr.push_back(mask);
 	}
-	for (int iter = 0; iter < 3; iter++)
-	{
-		GMM bgdGMM(bgModel), fgdGMM(fgModel);//前背景模型
-		GCGraph<double> graph;//图割
-		constructGCGraph(bgdGMM, fgdGMM, graph);
-		estimateSegmentation(graph, maskArr);
-		nextGMMs();
-	}
+
+	GMM bgdGMM(bgModel), fgdGMM(fgModel);//前背景模型
+	GCGraph<double> graph;//图割
+	constructGCGraph(bgdGMM, fgdGMM, graph);
+	estimateSegmentation(graph, maskArr);
+
 
 }
