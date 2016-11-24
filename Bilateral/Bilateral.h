@@ -23,6 +23,7 @@ public:
 	void run(std::vector<Mat>& );
 private:
 	void initGrid();
+	void nextGMMs();
 	void constructGCGraph(const GMM&, const GMM&, GCGraph<double>& graph);
 	int calculateVtxCount();
 	void estimateSegmentation(GCGraph<double>&, std::vector<Mat>& );
