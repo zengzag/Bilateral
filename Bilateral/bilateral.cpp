@@ -242,7 +242,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t - 1,x,y,r,g,b };
 									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
 										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
-										w = 40 * log(w);
+										w = 30 * log(w);
 										int a = grid.at<Vec< int, 3 > >(pointN)[1];
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
 									}
