@@ -48,20 +48,20 @@ void Bilateral::InitGmms(Mat& mask, int index)
 				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
 				grid.at<Vec< int, 3 > >(point)[2] = GC_FGD;
 			}
-			//else if (mask.at<uchar>(x, y) == GC_PR_FGD) {
-			//	Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
-			//	fgdSamples.push_back(color);
-			//	getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-			//	if (grid.at<Vec< int, 3 > >(point)[2] == -1)
-			//		grid.at<Vec< int, 3 > >(point)[2] = GC_PR_FGD;
-			//}
-			//else if (mask.at<uchar>(x, y) == GC_PR_BGD) {
-			//	Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
-			//	bgdSamples.push_back(color);
-			//	getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-			//	if (grid.at<Vec< int, 3 > >(point)[2] == -1)
-			//		grid.at<Vec< int, 3 > >(point)[2] = GC_PR_BGD;
-			//}
+			else if (mask.at<uchar>(x, y) == GC_PR_FGD) {
+				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
+				fgdSamples.push_back(color);
+				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
+				if (grid.at<Vec< int, 3 > >(point)[2] == -1)
+					grid.at<Vec< int, 3 > >(point)[2] = GC_PR_FGD;
+			}
+			else if (mask.at<uchar>(x, y) == GC_PR_BGD) {
+				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
+				bgdSamples.push_back(color);
+				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
+				if (grid.at<Vec< int, 3 > >(point)[2] == -1)
+					grid.at<Vec< int, 3 > >(point)[2] = GC_PR_BGD;
+			}
 		}
 	}
 

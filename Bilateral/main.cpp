@@ -176,17 +176,17 @@ void GCApplication::reLblsInMask(Point pCurrent, Point pCenter)
 		mask.at<uchar>(pCurrent) = GC_FGD;
 		vector<Point> P = { Point(pCurrent.x - 1,pCurrent.y) ,Point(pCurrent.x + 1,pCurrent.y) ,Point(pCurrent.x,pCurrent.y - 1) ,Point(pCurrent.x ,pCurrent.y + 1) };
 		for (int i = 0;i < 4;i++) {
-				if (P[i].x >= 0 && P[i].y >= 0&& P[i].x <video.get(CV_CAP_PROP_FRAME_WIDTH)-1 && P[i].y <video.get(CV_CAP_PROP_FRAME_HEIGHT)-1) {
-					Vec3b color1 = image->at<Vec3b>(P[i]);
-					Vec3b color2 = image->at<Vec3b>(pCurrent);
-					Vec3b color3 = image->at<Vec3b>(pCenter);
-					bool p_pCurrent = color1[0] - color2[0] <= 4 && color1[1] - color2[1] <= 4 && color1[2] - color2[2] <= 4;
-					bool p_pCenter = color1[0] - color3[0] <= 8 && color1[1] - color3[1] <= 8 && color1[2] - color3[2] <= 8;
-					if (p_pCurrent && p_pCenter&&mask.at<uchar>(P[i]) == GC_PR_FGD) {
-						reLblsInMask(P[i], pCenter);
-					}
+			if (P[i].x >= 0 && P[i].y >= 0 && P[i].x < video.get(CV_CAP_PROP_FRAME_WIDTH) - 1 && P[i].y < video.get(CV_CAP_PROP_FRAME_HEIGHT) - 1) {
+				Vec3b color1 = image->at<Vec3b>(P[i]);
+				Vec3b color2 = image->at<Vec3b>(pCurrent);
+				Vec3b color3 = image->at<Vec3b>(pCenter);
+				bool p_pCurrent = abs(color1[0] - color2[0]) <= 8 && abs(color1[1] - color2[1]) <= 8 && abs(color1[2] - color2[2]) <= 8;
+				bool p_pCenter = abs(color1[0] - color3[0]) <= 16 && abs(color1[1] - color3[1]) <= 16 && abs(color1[2] - color3[2]) <= 16;
+				if (p_pCurrent && p_pCenter&&mask.at<uchar>(P[i]) == GC_PR_FGD) {
+					reLblsInMask(P[i], pCenter);
 				}
-			
+			}
+
 		}
 	}
 }
@@ -293,8 +293,8 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/paragliding.avi");
-	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/parkour.avi");
+	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
