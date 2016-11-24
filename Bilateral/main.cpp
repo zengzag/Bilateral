@@ -59,7 +59,7 @@ public:
 	bool isInitialized;
 
 	Rect rect;
-	vector<Point> fgdPxls, bgdPxls; //前景、背景、可能前景、可能背景点
+	vector<Point> fgdPxls, bgdPxls, prFgdPxls, prBgdPxls; //前景、背景、可能前景、可能背景点
 public:
 	enum { NOT_SET = 0, IN_PROCESS = 1, SET = 2 };
 	static const int radius = 2;
@@ -79,7 +79,7 @@ void GCApplication::reset()
 	if (!mask.empty())
 		mask.setTo(Scalar::all(GC_BGD));
 	bgdPxls.clear(); fgdPxls.clear();
-
+	prBgdPxls.clear();  prFgdPxls.clear();
 	isInitialized = false;
 	rectState = NOT_SET;
 	lblsState = NOT_SET;
@@ -116,6 +116,10 @@ void GCApplication::showImage() const
 		circle(res, *it, radius, BLUE, thickness);
 	for (it = fgdPxls.begin(); it != fgdPxls.end(); ++it)
 		circle(res, *it, radius, RED, thickness);
+	for (it = prBgdPxls.begin(); it != prBgdPxls.end(); ++it)
+		circle(res, *it, radius, LIGHTBLUE, thickness);
+	for (it = prFgdPxls.begin(); it != prFgdPxls.end(); ++it)
+		circle(res, *it, radius, PINK, thickness);
 
 	if (rectState == IN_PROCESS || rectState == SET)
 		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), GREEN, 2);
@@ -138,12 +142,20 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 {
 	vector<Point> *bpxls, *fpxls;
 	uchar bvalue, fvalue;
-
-	bpxls = &bgdPxls;
-	fpxls = &fgdPxls;
-	bvalue = GC_BGD;
-	fvalue = GC_FGD;
-
+	if (!isPr)
+	{
+		bpxls = &bgdPxls;
+		fpxls = &fgdPxls;
+		bvalue = GC_BGD;
+		fvalue = GC_FGD;
+	}
+	else
+	{
+		bpxls = &prBgdPxls;
+		fpxls = &prFgdPxls;
+		bvalue = GC_PR_BGD;
+		fvalue = GC_PR_FGD;
+	}
 	if (flags & BGD_KEY)
 	{
 		bpxls->push_back(p);
@@ -155,6 +167,7 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 		circle(mask, p, radius, fvalue, thickness);
 	}
 }
+
 
 void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 {
