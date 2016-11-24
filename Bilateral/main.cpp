@@ -35,7 +35,7 @@ static void help()
 		"\tCTRL+left mouse button - set GC_BGD pixels\n"
 		"\tSHIFT+left mouse button - set GC_FGD pixels\n"
 		"\n"
-		 << endl;
+		<< endl;
 }
 
 
@@ -46,7 +46,7 @@ static void getBinMask(const Mat& comMask, Mat& binMask)
 		CV_Error(Error::StsBadArg, "comMask is empty or has incorrect type (not CV_8UC1)");
 	if (binMask.empty() || binMask.rows != comMask.rows || binMask.cols != comMask.cols)
 		binMask.create(comMask.size(), CV_8UC1);
-	binMask = comMask & 1;
+	binMask = comMask & 2;
 }
 
 class GCApplication
@@ -72,6 +72,7 @@ public:
 private:
 	void setRectInMask();
 	void setLblsInMask(int flags, Point p, bool isPr);
+	void reLblsInMask(Point pCurrent, Point pCenter);
 };
 
 void GCApplication::reset()
@@ -115,7 +116,7 @@ void GCApplication::showImage() const
 	for (it = bgdPxls.begin(); it != bgdPxls.end(); ++it)
 		circle(res, *it, radius, BLUE, thickness);
 	for (it = fgdPxls.begin(); it != fgdPxls.end(); ++it)
-		circle(res, *it, radius, RED, thickness);
+		circle(res, *it, 0, RED, thickness);
 	for (it = prBgdPxls.begin(); it != prBgdPxls.end(); ++it)
 		circle(res, *it, radius, LIGHTBLUE, thickness);
 	for (it = prFgdPxls.begin(); it != prFgdPxls.end(); ++it)
@@ -153,8 +154,8 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 	{
 		bpxls = &prBgdPxls;
 		fpxls = &prFgdPxls;
-		bvalue = GC_PR_BGD;
-		fvalue = GC_PR_FGD;
+		bvalue = GC_BGD;
+		fvalue = GC_FGD;
 	}
 	if (flags & BGD_KEY)
 	{
@@ -165,6 +166,28 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 	{
 		fpxls->push_back(p);
 		circle(mask, p, radius, fvalue, thickness);
+	}
+}
+
+void GCApplication::reLblsInMask(Point pCurrent, Point pCenter)
+{
+	if (mask.at<uchar>(pCurrent) == GC_PR_FGD) {
+		fgdPxls.push_back(pCurrent);
+		mask.at<uchar>(pCurrent) = GC_FGD;
+		vector<Point> P = { Point(pCurrent.x - 1,pCurrent.y) ,Point(pCurrent.x + 1,pCurrent.y) ,Point(pCurrent.x,pCurrent.y - 1) ,Point(pCurrent.x ,pCurrent.y + 1) };
+		for (int i = 0;i < 4;i++) {
+				if (P[i].x >= 0 && P[i].y >= 0&& P[i].x <video.get(CV_CAP_PROP_FRAME_WIDTH)-1 && P[i].y <video.get(CV_CAP_PROP_FRAME_HEIGHT)-1) {
+					Vec3b color1 = image->at<Vec3b>(P[i]);
+					Vec3b color2 = image->at<Vec3b>(pCurrent);
+					Vec3b color3 = image->at<Vec3b>(pCenter);
+					bool p_pCurrent = color1[0] - color2[0] <= 4 && color1[1] - color2[1] <= 4 && color1[2] - color2[2] <= 4;
+					bool p_pCenter = color1[0] - color3[0] <= 8 && color1[1] - color3[1] <= 8 && color1[2] - color3[2] <= 8;
+					if (p_pCurrent && p_pCenter&&mask.at<uchar>(P[i]) == GC_PR_FGD) {
+						reLblsInMask(P[i], pCenter);
+					}
+				}
+			
+		}
 	}
 }
 
@@ -212,7 +235,14 @@ void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 		}
 		if (lblsState == IN_PROCESS)
 		{
-			setLblsInMask(flags, Point(x, y), false);
+			if (flags & BGD_KEY)
+			{
+				setLblsInMask(flags, Point(x, y), true);
+			}
+			if (flags & FGD_KEY)
+			{
+				reLblsInMask(Point(x, y), Point(x, y));
+			}
 			lblsState = SET;
 			showImage();
 		}
@@ -234,7 +264,14 @@ void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 		}
 		else if (lblsState == IN_PROCESS)
 		{
-			setLblsInMask(flags, Point(x, y), false);
+			if (flags & BGD_KEY)
+			{
+				setLblsInMask(flags, Point(x, y), false);
+			}
+			if (flags & FGD_KEY)
+			{
+				reLblsInMask(Point(x, y), Point(x, y));
+			}
 			showImage();
 		}
 		else if (prLblsState == IN_PROCESS)
@@ -256,7 +293,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("image/parkour.avi");
+	video.open("image/paragliding.avi");
 	videowriter.open("image/output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
@@ -299,7 +336,7 @@ int main() {
 					Mat maskBlur, lastImg;
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
-				//	imshow("目标", lastImg);//显示结果
+					//	imshow("目标", lastImg);//显示结果
 					videowriter << lastImg;
 				}
 

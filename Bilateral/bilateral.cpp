@@ -230,8 +230,9 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									toSink = 9999;
 								}
 								else {
-									fromSource = -log(bgdGMM(color));
-									toSink = -log(fgdGMM(color));
+									double w = grid.at<Vec< int, 3 > >(point)[0]+1;
+									fromSource = -log(bgdGMM(color))* log(w);
+									toSink = -log(fgdGMM(color))* log(w);
 								}
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
 
@@ -241,7 +242,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t - 1,x,y,r,g,b };
 									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
 										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
-										w = 5 * log(w);
+										w = 40 * log(w);
 										int a = grid.at<Vec< int, 3 > >(pointN)[1];
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
 									}
@@ -250,7 +251,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x - 1,y,r,g,b };
 									if (grid.at<Vec< int, 3 >>(pointN)[0] > 0) {
 										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
-										w = 5 * log(w);
+										w = 20 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
 									}
 								}
@@ -258,7 +259,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y - 1,r,g,b };
 									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
 										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
-										w = 5 * log(w);
+										w = 20 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
 									}
 								}
@@ -266,7 +267,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r - 1,g,b };
 									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
 										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
-										w = 2 * log(w);
+										w = 10 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
 									}
 								}
@@ -274,7 +275,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r,g - 1,b };
 									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
 										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
-										w = 2 * log(w);
+										w = 10 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
 									}
 								}
@@ -282,7 +283,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r,g,b - 1 };
 									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
 										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
-										w = 2 * log(w);
+										w = 10 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
 									}
 								}
