@@ -3,6 +3,7 @@
 
 Bilateral::Bilateral(std::vector<Mat> img) :
 	imgSrcArr(img) {
+	initGrid();
 }
 
 Bilateral::~Bilateral()
@@ -18,7 +19,6 @@ Bilateral::~Bilateral()
 
 void Bilateral::InitGmms(Mat& mask, int index)
 {
-	keyMask = mask;
 	double _time = static_cast<double>(getTickCount());//计时
 
 	std::vector<Vec3f> bgdSamples;    //从背景点存储背景颜色
@@ -37,10 +37,15 @@ void Bilateral::InitGmms(Mat& mask, int index)
 			if (mask.at<uchar>(x, y) == GC_BGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				bgdSamples.push_back(color);
+
+				grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;
 			}
 			else if (mask.at<uchar>(x, y) == GC_FGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				fgdSamples.push_back(color);
+
+				grid.at<Vec< int, 4 > >(point)[fgdSum] += 1;
+
 			}
 			else if (mask.at<uchar>(x, y) == GC_PR_FGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
@@ -125,11 +130,7 @@ void Bilateral::initGrid() {
 				int bNew = gridSize[5] * color[2] / 256;
 				int point[6] = { tNew,xNew,yNew,rNew,gNew,bNew };
 				grid.at<Vec< int, 4 > >(point)[pixSum] += 1;
-				if (keyMask.at<uchar>(x, y) == GC_BGD) {
-					grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;
-				}else if (keyMask.at<uchar>(x, y) == GC_FGD) {
-					grid.at<Vec< int, 4 > >(point)[fgdSum] += 1;
-				}
+				
 			}
 		}
 	}
@@ -162,12 +163,20 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 								color[1] = (g * 256 + 256 / 2) / gridSize[4];
 								color[2] = (b * 256 + 256 / 2) / gridSize[5];
 								double fromSource, toSink;
-								
-									double w = grid.at<Vec< int, 4 > >(point)[pixSum]+1;
-									fromSource = -log(bgdGMM(color))* log(w);
-									toSink = -log(fgdGMM(color))* log(w);
-								
+								//double w = grid.at<Vec< int, 4 > >(point)[pixSum]+1;
+								fromSource = -log(bgdGMM(color));//* log(w);
+								toSink = -log(fgdGMM(color));//* log(w);
 
+								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
+								double toSinkSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
+								if (fromSourceSum > 0 && toSinkSum < 0) {
+									fromSource = 9999;
+									toSink = 0;
+								}
+								else if (fromSourceSum < 0 && toSinkSum > 0) {
+									fromSource = 0;
+									toSink = 9999;
+								}
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
 
 
@@ -176,7 +185,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t - 1,x,y,r,g,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 30 * log(w);
+										w = 5 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -184,7 +193,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x - 1,y,r,g,b };
 									if (grid.at<Vec< int, 4 >>(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 20 * log(w);
+										w = 5 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -192,7 +201,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y - 1,r,g,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 20 * log(w);
+										w = 5 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -200,7 +209,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r - 1,g,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 10 * log(w);
+										w = 2 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -208,7 +217,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r,g - 1,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 10 * log(w);
+										w = 2 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -216,7 +225,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r,g,b - 1 };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 10 * log(w);
+										w = 2 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -270,7 +279,27 @@ void Bilateral::estimateSegmentation(GCGraph<double>& graph, std::vector<Mat>& m
 	printf("图割分割用时 %f\n", _time);//显示时间
 
 	double _time2 = static_cast<double>(getTickCount());
-	
+	int tSize = maskArr.size();
+	int xSize = imgSrcArr[0].rows;
+	int ySize = imgSrcArr[0].cols;
+	for (int t = 0; t < tSize; t++)
+	{
+		for (int y = 0; y < ySize; y++)
+		{
+#pragma omp parallel for
+			for (int x = 0; x < xSize; x++)
+			{
+				Point p(x, y);
+				int point[6] = { 0,0,0,0,0,0 };
+				getGridPoint(t, p, point, tSize, xSize, ySize);
+				int vertex = grid.at<Vec< int, 4 > >(point)[vIdx];
+				if (graph.inSourceSegment(vertex))
+					maskArr[t].at<uchar>(p.x, p.y) = 1;
+				else
+					maskArr[t].at<uchar>(p.x, p.y) = 0;
+			}
+		}
+	}
 
 	_time2 = (static_cast<double>(getTickCount()) - _time2) / getTickFrequency();
 	printf("grid结果传递mask用时 %f\n", _time2);//显示时间
@@ -305,7 +334,7 @@ void Bilateral::run(std::vector<Mat>& maskArr) {
 
 	GMM bgdGMM(bgModel), fgdGMM(fgModel);//前背景模型
 	GCGraph<double> graph;//图割
-	initGrid();
+	
 	constructGCGraph(bgdGMM, fgdGMM, graph);
 	estimateSegmentation(graph, maskArr);
 
