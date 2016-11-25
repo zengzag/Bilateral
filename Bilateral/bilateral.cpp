@@ -3,7 +3,6 @@
 
 Bilateral::Bilateral(std::vector<Mat> img) :
 	imgSrcArr(img) {
-	initGrid();
 }
 
 Bilateral::~Bilateral()
@@ -38,29 +37,18 @@ void Bilateral::InitGmms(Mat& mask, int index)
 			if (mask.at<uchar>(x, y) == GC_BGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				bgdSamples.push_back(color);
-				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-				if (grid.at<Vec< int, 3 > >(point)[2] != GC_FGD)//同一个顶点有2种以上标记时选背景
-					grid.at<Vec< int, 3 > >(point)[2] = GC_BGD;
 			}
 			else if (mask.at<uchar>(x, y) == GC_FGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				fgdSamples.push_back(color);
-				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-				grid.at<Vec< int, 3 > >(point)[2] = GC_FGD;
 			}
 			else if (mask.at<uchar>(x, y) == GC_PR_FGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				fgdSamples.push_back(color);
-				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-				if (grid.at<Vec< int, 3 > >(point)[2] == -1)
-					grid.at<Vec< int, 3 > >(point)[2] = GC_PR_FGD;
 			}
 			else if (mask.at<uchar>(x, y) == GC_PR_BGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				bgdSamples.push_back(color);
-				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-				if (grid.at<Vec< int, 3 > >(point)[2] == -1)
-					grid.at<Vec< int, 3 > >(point)[2] = GC_PR_BGD;
 			}
 		}
 	}
@@ -113,62 +101,10 @@ void Bilateral::InitGmms(Mat& mask, int index)
 	printf("高斯建模用时%f\n", _time);//显示时间
 }
 
-void Bilateral::nextGMMs() {
-	double _time = static_cast<double>(getTickCount());
-	std::vector<Vec3f> bgdSamples;    //从背景点存储背景颜色
-	std::vector<Vec3f> fgdSamples;    //从前景点存储前景颜色
-	std::vector<int> bgdLabels;    //从背景点存储背景颜色
-	std::vector<int> fgdLabels;    //从前景点存储前景颜色
-
-	GMM bgdGMM(bgModel), fgdGMM(fgModel);
-
-
-	for (int t = 0; t < gridSize[0]; t++) {
-		for (int x = 0; x < gridSize[1]; x++) {
-			for (int y = 0; y < gridSize[2]; y++) {
-				for (int r = 0; r < gridSize[3]; r++) {
-					for (int g = 0; g < gridSize[4]; g++) {
-						for (int b = 0; b < gridSize[5]; b++) {
-							int point[6] = { t,x,y,r,g,b };
-							Vec3f color;//计算grid中顶点对应的颜色
-							color[0] = (r * 256 + 256 / 2) / gridSize[3];//多加256/2是为了把颜色移到方格中心
-							color[1] = (g * 256 + 256 / 2) / gridSize[4];
-							color[2] = (b * 256 + 256 / 2) / gridSize[5];
-							if (grid.at<Vec< int, 3 > >(point)[2] == GC_FGD || grid.at<Vec< int, 3 > >(point)[2] == GC_PR_FGD) {
-								int label = fgdGMM.whichComponent(color);
-								fgdSamples.push_back(color);
-								fgdLabels.push_back(label);
-							}
-							if (grid.at<Vec< int, 3 > >(point)[2] == GC_BGD || grid.at<Vec< int, 3 > >(point)[2] == GC_PR_BGD) {
-								int label = bgdGMM.whichComponent(color);
-								bgdSamples.push_back(color);
-								bgdLabels.push_back(label);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	bgdGMM.initLearning();
-	for (int i = 0; i < (int)bgdSamples.size(); i++)
-		bgdGMM.addSample(bgdLabels[i], bgdSamples[i]);
-	bgdGMM.endLearning();
-	fgdGMM.initLearning();
-	for (int i = 0; i < (int)fgdSamples.size(); i++)
-		fgdGMM.addSample(fgdLabels[i], fgdSamples[i]);
-	fgdGMM.endLearning();
-
-	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
-	printf("---优化高斯模型用时%f\n", _time);//显示时间
-}
-
-
 void Bilateral::initGrid() {
 	double _time = static_cast<double>(getTickCount());
 
-	Mat L(6, gridSize, CV_32SC(3), Scalar::all(-1));
+	Mat L(6, gridSize, CV_32SC(4), Scalar::all(-1));
 	grid = L;
 	int tSize = imgSrcArr.size();
 	int xSize = imgSrcArr[0].rows;
@@ -177,6 +113,7 @@ void Bilateral::initGrid() {
 	{
 		for (int x = 0; x < xSize; x++)
 		{
+#pragma omp parallel for
 			for (int y = 0; y < ySize; y++)
 			{
 				int tNew = gridSize[0] * t / tSize;
@@ -187,7 +124,12 @@ void Bilateral::initGrid() {
 				int gNew = gridSize[4] * color[1] / 256;
 				int bNew = gridSize[5] * color[2] / 256;
 				int point[6] = { tNew,xNew,yNew,rNew,gNew,bNew };
-				grid.at<Vec< int, 3 > >(point)[0] += 1;
+				grid.at<Vec< int, 4 > >(point)[pixSum] += 1;
+				if (keyMask.at<uchar>(x, y) == GC_BGD) {
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;
+				}else if (keyMask.at<uchar>(x, y) == GC_FGD) {
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 1;
+				}
 			}
 		}
 	}
@@ -210,81 +152,72 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 						for (int b = 0; b < gridSize[5]; b++) {
 							int point[6] = { t,x,y,r,g,b };
 
-							if (grid.at<Vec< int, 3 > >(point)[0] != -1) {
+							if (grid.at<Vec< int, 4 > >(point)[pixSum] != -1) {
 								int vtxIdx = graph.addVtx();//存在像素点映射就加顶点
 
 								//先验项
-								grid.at<Vec< int, 3 > >(point)[1] = vtxIdx;
+								grid.at<Vec< int, 4 > >(point)[vIdx] = vtxIdx;
 								Vec3b color;//计算grid中顶点对应的颜色
 								color[0] = (r * 256 + 256 / 2) / gridSize[3];//多加256/2是为了把颜色移到方格中心
 								color[1] = (g * 256 + 256 / 2) / gridSize[4];
 								color[2] = (b * 256 + 256 / 2) / gridSize[5];
 								double fromSource, toSink;
-
-								if (grid.at<Vec< int, 3 > >(point)[2] == GC_FGD) {
-									fromSource = 9999;
-									toSink = 0;
-								}
-								else if (grid.at<Vec< int, 3 > >(point)[2] == GC_BGD) {
-									fromSource = 0;
-									toSink = 9999;
-								}
-								else {
-									double w = grid.at<Vec< int, 3 > >(point)[0]+1;
+								
+									double w = grid.at<Vec< int, 4 > >(point)[pixSum]+1;
 									fromSource = -log(bgdGMM(color))* log(w);
 									toSink = -log(fgdGMM(color))* log(w);
-								}
+								
+
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
 
 
 								//平滑项
 								if (t > 0) {
 									int pointN[6] = { t - 1,x,y,r,g,b };
-									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
-										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
 										w = 30 * log(w);
-										int a = grid.at<Vec< int, 3 > >(pointN)[1];
-										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
 								if (x > 0) {
 									int pointN[6] = { t,x - 1,y,r,g,b };
-									if (grid.at<Vec< int, 3 >>(pointN)[0] > 0) {
-										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
+									if (grid.at<Vec< int, 4 >>(pointN)[pixSum] > 0) {
+										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
 										w = 20 * log(w);
-										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
 								if (y > 0) {
 									int pointN[6] = { t,x,y - 1,r,g,b };
-									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
-										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
 										w = 20 * log(w);
-										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
 								if (r > 0) {
 									int pointN[6] = { t,x,y,r - 1,g,b };
-									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
-										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
 										w = 10 * log(w);
-										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
 								if (g > 0) {
 									int pointN[6] = { t,x,y,r,g - 1,b };
-									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
-										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
 										w = 10 * log(w);
-										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
 								if (b > 0) {
 									int pointN[6] = { t,x,y,r,g,b - 1 };
-									if (grid.at<Vec< int, 3 > >(pointN)[0] > 0) {
-										double w = grid.at<Vec< int, 3 > >(point)[0] * grid.at<Vec< int, 3 > >(pointN)[0] + 1;
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
 										w = 10 * log(w);
-										graph.addEdges(vtxIdx, grid.at<Vec< int, 3 > >(pointN)[1], w, w);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
 
@@ -317,7 +250,7 @@ int Bilateral::calculateVtxCount() {
 						for (int b = 0; b < gridSize[5]; b++)
 						{
 							int point[6] = { t,x,y,r,g,b };
-							if (grid.at<Vec< int, 3 > >(point)[0] > 0) {
+							if (grid.at<Vec< int, 4 > >(point)[0] > 0) {
 								count++;
 							}
 						}
@@ -337,46 +270,7 @@ void Bilateral::estimateSegmentation(GCGraph<double>& graph, std::vector<Mat>& m
 	printf("图割分割用时 %f\n", _time);//显示时间
 
 	double _time2 = static_cast<double>(getTickCount());
-	//分割结果保存到grid
-	for (int t = 0; t < gridSize[0]; t++) {
-		for (int x = 0; x < gridSize[1]; x++) {
-			for (int y = 0; y < gridSize[2]; y++) {
-				for (int r = 0; r < gridSize[3]; r++) {
-					for (int g = 0; g < gridSize[4]; g++) {
-#pragma omp parallel for
-						for (int b = 0; b < gridSize[5]; b++) {
-							int point[6] = { t,x,y,r,g,b };
-							if (grid.at<Vec< int, 3 > >(point)[0] != -1) {
-								int vertex = grid.at<Vec< int, 3 > >(point)[1];
-								if (graph.inSourceSegment(vertex))
-									grid.at<Vec< int, 3 > >(point)[2] = grid.at<Vec< int, 3 > >(point)[2] == GC_FGD ? GC_FGD : GC_PR_FGD;
-								else
-									grid.at<Vec< int, 3 > >(point)[2] = grid.at<Vec< int, 3 > >(point)[2] == GC_BGD ? GC_BGD : GC_PR_BGD;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	int tSize = maskArr.size();
-	int xSize = imgSrcArr[0].rows;
-	int ySize = imgSrcArr[0].cols;
-	for (int t = 0; t < tSize; t++)
-	{
-		for (int y = 0; y < ySize; y++)
-		{
-#pragma omp parallel for
-			for (int x = 0; x < xSize; x++)
-			{
-				Point p(x, y);
-				int point[6] = { 0,0,0,0,0,0 };
-				getGridPoint(t, p, point, tSize, xSize, ySize);
-				maskArr[t].at<uchar>(p.x, p.y) = grid.at<Vec< int, 3 > >(point)[2] & 1;//与运算，取最低位
-			}
-		}
-	}
+	
 
 	_time2 = (static_cast<double>(getTickCount()) - _time2) / getTickFrequency();
 	printf("grid结果传递mask用时 %f\n", _time2);//显示时间
@@ -411,6 +305,7 @@ void Bilateral::run(std::vector<Mat>& maskArr) {
 
 	GMM bgdGMM(bgModel), fgdGMM(fgModel);//前背景模型
 	GCGraph<double> graph;//图割
+	initGrid();
 	constructGCGraph(bgdGMM, fgdGMM, graph);
 	estimateSegmentation(graph, maskArr);
 

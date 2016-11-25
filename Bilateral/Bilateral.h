@@ -8,6 +8,13 @@
 
 using namespace cv;
 
+enum girdIndex {
+	pixSum = 0,  //像素点数
+	fgdSum = 1,  //前景点数（邻近插值）
+	bgdSum = 2,  //背景
+	vIdx = 3   //顶点标签
+};
+
 class Bilateral
 {
 public:
@@ -23,7 +30,6 @@ public:
 	void run(std::vector<Mat>& );
 private:
 	void initGrid();
-	void nextGMMs();
 	void constructGCGraph(const GMM&, const GMM&, GCGraph<double>& graph);
 	int calculateVtxCount();
 	void estimateSegmentation(GCGraph<double>&, std::vector<Mat>& );
