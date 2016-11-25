@@ -13,6 +13,7 @@ using namespace cv;
 VideoCapture video;
 VideoWriter videowriter;
 std::vector<Mat> imgSrcArr, maskArr;
+std::vector<std::vector<Mat> > imgSrcArrArr;
 
 const Scalar RED = Scalar(0, 0, 255);
 const Scalar PINK = Scalar(230, 130, 255);
@@ -298,13 +299,13 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/bear.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/surf.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
-		int key = 5;
-		for (int i = 0;i < 9;i++) {
+		int key = 15;
+		for (int i = 0;i < 29;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
