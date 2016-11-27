@@ -304,8 +304,8 @@ int main() {
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
-		int key = 15;
-		for (int i = 0;i < 29;i++) {
+		int key = 5;
+		for (int i = 0;i < 10;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
