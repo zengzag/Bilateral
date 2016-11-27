@@ -142,14 +142,14 @@ void Bilateral::InitGmms(Mat& mask, int index)
 					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
 				}
 			}
-			else if (mask.at<uchar>(x, y) == GC_PR_FGD) {
+			/*else if (mask.at<uchar>(x, y) == GC_PR_FGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				fgdSamples.push_back(color);
 			}
 			else if (mask.at<uchar>(x, y) == GC_PR_BGD) {
 				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
 				bgdSamples.push_back(color);
-			}
+			}*/
 		}
 	}
 
@@ -261,7 +261,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 
 								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double toSinkSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
-								/*if (fromSourceSum >= 0 && toSinkSum < 0) {
+								if (fromSourceSum >= 0 && toSinkSum < 0) {
 									fromSource = 9999;
 									toSink = 0;
 								}
@@ -269,10 +269,10 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else {*/
-								fromSource = -log(bgdGMM(color));// +log(toSinkSum + 2);
-									toSink = -log(fgdGMM(color)); //+log(fromSourceSum + 2);
-								/*}*/
+								else {
+								fromSource = -log(bgdGMM(color)) +log(toSinkSum + 2);
+									toSink = -log(fgdGMM(color)) +log(fromSourceSum + 2);
+								}
 
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
 
@@ -282,7 +282,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t - 1,x,y,r,g,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 5 * log(w);
+										w = 6 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
