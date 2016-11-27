@@ -177,7 +177,7 @@ void GCApplication::reLblsInMask(Point pCurrent, Point pCenter, bool isFGD)
 
 	if (mask.at<uchar>(pCurrent) == GC_PR_FGD) {
 		pxls->push_back(pCurrent);
-		mask.at<uchar>(pCurrent) = value;
+		circle(mask, pCurrent, 0, value, thickness);
 		Point p;
 		for (p.x = pCurrent.x - 1; p.x < pCurrent.x + 2;p.x++) {
 			for (p.y = pCurrent.y - 1; p.y < pCurrent.y + 2;p.y++) {

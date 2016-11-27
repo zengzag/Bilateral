@@ -261,7 +261,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 
 								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double toSinkSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
-								if (fromSourceSum >= 0 && toSinkSum < 0) {
+								/*if (fromSourceSum >= 0 && toSinkSum < 0) {
 									fromSource = 9999;
 									toSink = 0;
 								}
@@ -269,10 +269,10 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else {
-									fromSource = -log(bgdGMM(color)) + log(toSinkSum + 2);
-									toSink = -log(fgdGMM(color)) + log(fromSourceSum + 2);
-								}
+								else {*/
+								fromSource = -log(bgdGMM(color));// +log(toSinkSum + 2);
+									toSink = -log(fgdGMM(color)); //+log(fromSourceSum + 2);
+								/*}*/
 
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
 
