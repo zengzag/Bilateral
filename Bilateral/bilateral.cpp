@@ -282,7 +282,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t - 1,x,y,r,g,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 6 * log(w);
+										w = 16 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -290,7 +290,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x - 1,y,r,g,b };
 									if (grid.at<Vec< int, 4 >>(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 5 * log(w);
+										w = 8 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -298,7 +298,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y - 1,r,g,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 5 * log(w);
+										w = 8 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -306,7 +306,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r - 1,g,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 2 * log(w);
+										w = 4 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -314,7 +314,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r,g - 1,b };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 2 * log(w);
+										w = 4 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
@@ -322,7 +322,7 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 									int pointN[6] = { t,x,y,r,g,b - 1 };
 									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
 										double w = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-										w = 2 * log(w);
+										w = 4 * log(w);
 										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}

@@ -299,13 +299,13 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/blackswan.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/bmx-bumps.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//CAP_PROP_FRAME_COUNT
-	for (int times = 0; times < 1; times++)
+	for (int times = 0; times < 2; times++)
 	{
 		int key = 5;
-		for (int i = 0;i < 10;i++) {
+		for (int i = 0;i < 9;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
