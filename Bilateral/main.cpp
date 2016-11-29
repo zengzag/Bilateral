@@ -299,12 +299,15 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/bmx-bumps.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/paragliding-launch.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
+
+	Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
+	Mat imgShow;
 	//CAP_PROP_FRAME_COUNT
-	for (int times = 0; times < 2; times++)
+	for (int times = 0; times < 1; times++)
 	{
-		int key = 5;
+		int key = 4;
 		for (int i = 0;i < 9;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
@@ -331,7 +334,7 @@ int main() {
 				printf("第%d段开始分割\n", times + 1);
 				double _time = static_cast<double>(getTickCount());
 				Bilateral bilateral(imgSrcArr);
-				bilateral.InitGmms(gcapp.mask, key);
+				bilateral.InitGmms(gcapp.mask, key);//gcapp.mask   tureMask
 				bilateral.run(maskArr);
 				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 				printf("总用时为%f\n", _time);//显示时间
