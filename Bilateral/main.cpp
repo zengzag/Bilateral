@@ -331,6 +331,7 @@ int main() {
 			char c = (char)t;
 			if (c == 's')   //键盘输入S实现分割
 			{
+				//imwrite("E:/Projects/OpenCV/DAVIS-data/image/0mask.bmp", gcapp.mask);
 
 				printf("第%d段开始分割\n", times + 1);
 				double _time = static_cast<double>(getTickCount());
@@ -361,12 +362,13 @@ int main() {
 				maskArr.clear();
 				printf("第%d段分割结束\n", times + 1);
 
+				videowriter.release();
 				//break;
 			}
 		}
 	}
 
-	videowriter.release();
+	//videowriter.release();
 	video.release();
 	imgSrcArr.clear();
 	destroyAllWindows();
