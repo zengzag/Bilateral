@@ -336,7 +336,7 @@ int main() {
 				printf("第%d段开始分割\n", times + 1);
 				double _time = static_cast<double>(getTickCount());
 				Bilateral bilateral(imgSrcArr);
-				bilateral.InitGmms(tureMask, key);//gcapp.mask   tureMask
+				bilateral.InitGmms(gcapp.mask, key);//gcapp.mask   tureMask
 				bilateral.run(maskArr);
 				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 				printf("总用时为%f\n", _time);//显示时间

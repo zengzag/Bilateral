@@ -13,9 +13,6 @@ enum girdIndex {
 	fgdSum = 1,  //前景点数（邻近插值）
 	bgdSum = 2,  //背景
 	vIdx = 3,   //顶点标签
-	rColor = 4,
-	gColor = 5,
-	bColor = 6,
 };
 
 class Bilateral
