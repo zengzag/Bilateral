@@ -9,32 +9,33 @@
 using namespace cv;
 
 enum girdIndex {
-	pixSum = 0,  //像素点数
-	fgdSum = 1,  //前景点数（邻近插值）
-	bgdSum = 2,  //背景
-	vIdx = 3,   //顶点标签
+	pixSum = 0,  //双边网格顶点包含像素点数
+	lables = 1,  //双边网格顶点的标签（分割结果）
+	bothB_F = 2,  //双边网格顶点是否同时有前背景点
+	vIdx = 3,   //图割时的顶点
 };
 
 class Bilateral
 {
 public:
-	std::vector<Mat> imgSrcArr;	 //输入图片数据
-	Mat bgModel, fgModel;	//前背景高斯模型
+	std::vector<Mat> imgSrcArr,maskArr;	 //输入图片数据
+	std::vector<Mat> bgModelArr, fgModelArr;	//前背景高斯模型
 	Mat grid,gridColor;	//升维，平均取点，得到的grid。6维数组，保存顶点值与邻近像素点总数。
 	const int gridSize[6] = { 3,30,50,16,16,16 };	//grid各个维度的大小,按顺序来为：t,x,y,r,g,b。
 public:
-	Bilateral(std::vector<Mat> img);
+	Bilateral(std::vector<Mat> imgSrcArr, std::vector<Mat> maskArr);
 	~Bilateral();
-	void InitGmms(Mat& , int);
-	void run(std::vector<Mat>& );
+	void run(int times);
 private:
 	void initGrid();
-	void constructGCGraph(const GMM&, const GMM&, GCGraph<double>& graph);
+	void InitGmms();
+	void nextGMMs();
+	void constructGCGraph(GCGraph<double>& graph);
 	int calculateVtxCount();
-	void estimateSegmentation(GCGraph<double>&, std::vector<Mat>& );
+	void estimateSegmentation(GCGraph<double>& );
 	void getGridPoint(int , const Point , int *, int , int , int );
 	void getGridPoint(int , const Point , std::vector<int>& , int , int , int );
-	void getColor();
+	void getMask();
 };
 
 #endif

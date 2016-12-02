@@ -299,7 +299,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/paragliding-launch.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/bmx-bumps.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
@@ -307,21 +307,34 @@ int main() {
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
-		int key = 4;
 		for (int i = 0;i < 9;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		gcapp.reset();
-		help();
-		const string winName = "原图像";
-		namedWindow(winName, WINDOW_AUTOSIZE);
-		setMouseCallback(winName, on_mouse, 0);
+		for (int i = 0;i < imgSrcArr.size();i++) {
+			gcapp.reset();
+			const string winName = "原图像";
+			namedWindow(winName, WINDOW_AUTOSIZE);
+			setMouseCallback(winName, on_mouse, 0);
+			gcapp.setImageAndWinName(imgSrcArr[i], winName);
+			gcapp.showImage();
+			while (1)
+			{
+				int t = waitKey();
+				char c = (char)t;
+				if (c == 'n') {   //键盘输入S实现分割
+					printf("第%d帧\n" ,i+1);
+					break;
+				}
+			}
+			Mat mask;
+			gcapp.mask.copyTo(mask);
+			maskArr.push_back(mask);
+		}
 
-		gcapp.setImageAndWinName(imgSrcArr[key], winName);
-		gcapp.showImage();
+		printf("标记结束\n");
 
 		while (1)
 		{
@@ -335,9 +348,8 @@ int main() {
 
 				printf("第%d段开始分割\n", times + 1);
 				double _time = static_cast<double>(getTickCount());
-				Bilateral bilateral(imgSrcArr);
-				bilateral.InitGmms(gcapp.mask, key);//gcapp.mask   tureMask
-				bilateral.run(maskArr);
+				Bilateral bilateral(imgSrcArr, maskArr);
+				bilateral.run(3);
 				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 				printf("总用时为%f\n", _time);//显示时间
 
@@ -362,13 +374,11 @@ int main() {
 				maskArr.clear();
 				printf("第%d段分割结束\n", times + 1);
 
-				videowriter.release();
-				//break;
 			}
 		}
 	}
 
-	//videowriter.release();
+	videowriter.release();
 	video.release();
 	imgSrcArr.clear();
 	destroyAllWindows();
