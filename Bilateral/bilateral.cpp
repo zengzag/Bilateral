@@ -448,7 +448,7 @@ int Bilateral::calculateVtxCount() {
 						for (int b = 0; b < gridSize[5]; b++)
 						{
 							int point[6] = { t,x,y,r,g,b };
-							if (grid.at<Vec< int, 4 > >(point)[0] > 0) {
+							if (grid.at<Vec< int, 4 > >(point)[pixSum] > 0) {
 								count++;
 							}
 						}
