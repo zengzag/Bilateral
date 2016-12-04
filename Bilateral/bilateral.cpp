@@ -91,26 +91,6 @@ void Bilateral::InitGmms()
 			fgdGMM.addSample(fgdLabels.at<int>(i, 0), fgdSamples[i], fgdWeight[i]);
 		fgdGMM.endLearning();
 
-		//ÑµÁ·GMMsÄ£ÐÍ
-		//for (int i = 0; i < (int)bgdSamples.size(); i++) {
-		//	Vec3d color = bgdSamples[i];
-		//	bgdLabels.at<int>(i, 0) = bgdGMM.whichComponent(color);
-		//}
-
-		//for (int i = 0; i < (int)fgdSamples.size(); i++) {
-		//	Vec3d color = fgdSamples[i];
-		//	fgdLabels.at<int>(i, 0) = fgdGMM.whichComponent(color);
-		//}
-
-		//bgdGMM.initLearning();
-		//for (int i = 0; i < (int)bgdSamples.size(); i++)
-		//	bgdGMM.addSample(bgdLabels.at<int>(i, 0), bgdSamples[i], bgdWeight[i]);
-		//bgdGMM.endLearning();
-		//fgdGMM.initLearning();
-		//for (int i = 0; i < (int)fgdSamples.size(); i++)
-		//	fgdGMM.addSample(fgdLabels.at<int>(i, 0), fgdSamples[i],fgdWeight[i]);
-		//fgdGMM.endLearning();
-
 	}
 
 	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
