@@ -349,7 +349,7 @@ int main() {
 				printf("第%d段开始分割\n", times + 1);
 				double _time = static_cast<double>(getTickCount());
 				Bilateral bilateral(imgSrcArr, maskArr);
-				bilateral.run(3);
+				bilateral.run(1);
 				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 				printf("总用时为%f\n", _time);//显示时间
 
@@ -359,8 +359,8 @@ int main() {
 					Mat maskBlur, lastImg;
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
-					//	imshow("目标", lastImg);//显示结果
-					videowriter << lastImg;
+					imshow("第"+to_string(t+1)+"帧", lastImg);//显示结果
+					//videowriter << lastImg;//显示结果
 				}
 
 				//清除容器，释放内存
