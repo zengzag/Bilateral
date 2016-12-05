@@ -348,8 +348,8 @@ int main() {
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
 					//	imshow("目标", lastImg);//显示结果
-					/*string name = "第" + to_string(t + 1) + "帧.png";
-					imwrite("E:/Projects/OpenCV/DAVIS-data/image/output/" + name, lastImg);*/
+					//string name = "E:/Projects/OpenCV/DAVIS-data/image/output/第" + to_string(t + 1) + "帧.bmp";
+					//imwrite(name, lastImg);
 					videowriter << lastImg;
 				}
 
