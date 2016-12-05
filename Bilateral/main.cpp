@@ -299,10 +299,10 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/bmx-bumps.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/paragliding-launch.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
-	Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
+	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
 
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
@@ -359,8 +359,10 @@ int main() {
 					Mat maskBlur, lastImg;
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
-					imshow("第"+to_string(t+1)+"帧", lastImg);//显示结果
-					//videowriter << lastImg;//显示结果
+					//imshow("第"+to_string(t+1)+"帧", lastImg);//显示结果
+					string name = "第" + to_string(t + 1) + "帧.png";
+					imwrite("E:/Projects/OpenCV/DAVIS-data/image/output/"+name, lastImg);
+					videowriter << lastImg;//显示结果
 				}
 
 				//清除容器，释放内存

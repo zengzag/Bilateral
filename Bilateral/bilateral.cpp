@@ -48,15 +48,15 @@ void Bilateral::InitGmms()
 									int vtxLable = grid.at<Vec< int, 4 > >(point)[lables];
 									if (vtxLable == GC_BGD || vtxLable == GC_PR_BGD) {
 										bgdSamples.push_back(color);
-										double weight = vtxLable == GC_BGD ? 5.0 : 1.0;
-										weight = weight*count*exp(-(t-gmmNum)*(t - gmmNum)) / 1000.0;
+										double weight = vtxLable == GC_BGD ? 3.0 : 1.0;
+										weight = weight*count*exp(-(t-gmmNum)*(t - gmmNum)) / 100.0;
 										//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
 										bgdWeight.push_back(weight);
 									}
 									else {
 										fgdSamples.push_back(color);
-										double weight = vtxLable == GC_FGD ? 5.0 : 1.0;
-										weight = weight*count*exp(-(t - gmmNum)*(t - gmmNum)) / 1000.0;
+										double weight = vtxLable == GC_FGD ? 3.0 : 1.0;
+										weight = weight*count*exp(-(t - gmmNum)*(t - gmmNum)) / 100.0;
 										fgdWeight.push_back(weight);
 									}
 								}
@@ -121,8 +121,8 @@ void Bilateral::nextGMMs() {
 									int vtxLable = grid.at<Vec< int, 4 > >(point)[lables];
 									if (vtxLable == GC_BGD || vtxLable == GC_PR_BGD) {
 										bgdSamples.push_back(color);
-										double weight = vtxLable == GC_BGD ? 5.0 : 1.0;
-										weight = weight*count*exp(-(t - gmmNum)*(t - gmmNum)) / 1000.0;
+										double weight = vtxLable == GC_BGD ? 3.0 : 1.0;
+										weight = weight*count*exp(-(t - gmmNum)*(t - gmmNum)) / 100.0;
 										//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
 										bgdWeight.push_back(weight);
 										int label = bgdGMM.whichComponent(color);
@@ -130,8 +130,8 @@ void Bilateral::nextGMMs() {
 									}
 									else {
 										fgdSamples.push_back(color);
-										double weight = vtxLable == GC_FGD ? 5.0 : 1.0;
-										weight = weight*count*exp(-(t - gmmNum)*(t - gmmNum)) / 1000.0;
+										double weight = vtxLable == GC_FGD ? 3.0 : 1.0;
+										weight = weight*count*exp(-(t - gmmNum)*(t - gmmNum)) / 100.0;
 										fgdWeight.push_back(weight);
 										int label = fgdGMM.whichComponent(color);
 										fgdLabels.push_back(label);
@@ -153,6 +153,7 @@ void Bilateral::nextGMMs() {
 		for (int i = 0; i < (int)fgdSamples.size(); i++)
 			fgdGMM.addSample(fgdLabels[i], fgdSamples[i], fgdWeight[i]);
 		fgdGMM.endLearning();
+
 
 	}
 
@@ -288,6 +289,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								double fromSource, toSink;
 
 								int vtxLable = grid.at<Vec< int, 4 > >(point)[lables];
+								double num = grid.at<Vec< int, 4 > >(point)[pixSum];
 								//综合方法
 								if (vtxLable  == GC_BGD) {
 									fromSource = 0;
@@ -298,8 +300,8 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 									toSink = 0;
 								}
 								else {
-									fromSource = -log(bgdGMM(color));
-									toSink = -log(fgdGMM(color));
+									fromSource = -log(bgdGMM(color))*sqrt(num);
+									toSink = -log(fgdGMM(color))*sqrt(num);
 								}
 
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
@@ -314,10 +316,10 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 														int pointN[6] = { tN,xN,yN,rN,gN,bN };
 														count++;
 														if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0 && count > 1) {
-															double num = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
+															double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
 															Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 															double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-															double w = 1.0 * e * log(num);
+															double w = 2.0 * e * sqrt(num);
 															graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 
 														}
@@ -461,8 +463,5 @@ void Bilateral::run(int times) {
 		estimateSegmentation(graph);
 		
 	}	
-	//GCGraph<double> graph;
-	//constructGCGraph(graph);
-	//estimateSegmentation(graph);
 	getMask();
 }
