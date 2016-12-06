@@ -299,13 +299,13 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/333.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/paragliding-launch.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
 
 	//CAP_PROP_FRAME_COUNT
-	for (int times = 0; times < 1; times++)
+	for (int times = 0; times < 5; times++)
 	{
 		int key = 5;
 		for (int i = 0;i < 9;i++) {
@@ -364,13 +364,13 @@ int main() {
 				maskArr.clear();
 				printf("µÚ%d¶Î·Ö¸î½áÊø\n", times + 1);
 
-				videowriter.release();
+				//videowriter.release();
 				//break;
 			}
 		}
 	}
 
-	//videowriter.release();
+	videowriter.release();
 	video.release();
 	imgSrcArr.clear();
 	destroyAllWindows();
