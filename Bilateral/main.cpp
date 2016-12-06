@@ -55,6 +55,7 @@ public:
 	const string* winName;//窗口名
 	const Mat* image; //输入图
 	Mat mask;
+	//Mat res;
 	uchar rectState, lblsState, prLblsState;
 	bool isInitialized;
 
@@ -82,7 +83,8 @@ void GCApplication::reset()
 	bgdPxls.clear(); fgdPxls.clear();
 	prBgdPxls.clear();  prFgdPxls.clear();
 	isInitialized = false;
-	rectState = NOT_SET;
+	mask.setTo(GC_PR_FGD);
+	rectState = SET;
 	lblsState = NOT_SET;
 	prLblsState = NOT_SET;
 }
@@ -171,7 +173,7 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 
 void GCApplication::reLblsInMask(Point pCurrent, Point pCenter, bool isFGD)
 {
-	uchar value = isFGD? GC_FGD: GC_BGD;
+	uchar value = isFGD ? GC_FGD : GC_BGD;
 	vector<Point> *pxls = isFGD ? &fgdPxls : &bgdPxls;
 
 	if (mask.at<uchar>(pCurrent) == GC_PR_FGD) {
@@ -298,7 +300,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/paragliding-launch.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/222.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
@@ -306,94 +308,101 @@ int main() {
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
-		int key[5] = {4,13,22,31,40};
+		int key[5] = { 4,13,22,31,40 };
 		for (int i = 0;i < 45;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		for (int i = 0;i < 5;i++) {
-			string name = "E:/Projects/OpenCV/DAVIS-data/image/output/" + to_string(i) + ".bmp";
+		/*for (int i = 0;i < 5;i++) {
+			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/paragliding-launch/" + to_string(i) + ".bmp";
 			Mat mask = imread(name, 0);
 			keyMaskArr.push_back(mask);
-			
-		}
-		//for (int i = 0;i < 5;i++) {
-		//	gcapp.reset();
-		//	const string winName = "原图像";
-		//	namedWindow(winName, WINDOW_AUTOSIZE);
-		//	setMouseCallback(winName, on_mouse, 0);
-		//	gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
-		//	gcapp.showImage();
-		//	printf("第%d帧\n", key[i]);
-		//	while (1)
-		//	{
-		//		int t = waitKey();
-		//		char c = (char)t;
-		//		if (c == 'n') {   //键盘输入S实现分割
-		//			break;
-		//		}
-		//	}
-		//	Mat mask;
-		//	gcapp.mask.copyTo(mask);
-		//	keyMaskArr.push_back(mask);
-		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/output/" + to_string(i) + ".bmp";
-		//	imwrite(name, mask);
-		//}
 
-		printf("标记结束\n");
-		imshow("目标", imgSrcArr[0]);//显示结果
-		while (1)
-		{
-			int t = waitKey();
-			if (t == 27) break; //27就是esc,随时生效
-
-			char c = (char)t;
-			if (c == 's')   //键盘输入S实现分割
+		}*/
+		for (int i = 0;i < 5;i++) {
+			gcapp.reset();
+			const string winName = "原图像";
+			namedWindow(winName, WINDOW_AUTOSIZE);
+			setMouseCallback(winName, on_mouse, 0);
+			gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
+			gcapp.showImage();
+			printf("第%d帧\n", key[i]);
+			while (1)
 			{
-				//imwrite("E:/Projects/OpenCV/DAVIS-data/image/0mask.bmp", gcapp.mask);
-
-				printf("第%d段开始分割\n", times + 1);
-				double _time = static_cast<double>(getTickCount());
-				Bilateral bilateral(imgSrcArr);
-				bilateral.InitGmms(keyMaskArr, key);//gcapp.mask   tureMask
-				bilateral.run(maskArr);
-				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
-				printf("总用时为%f\n", _time);//显示时间
-
-				for (int t = 0; t < imgSrcArr.size(); t++)
-				{
-					Mat mask = maskArr[t];
-					Mat maskBlur, lastImg;
-					medianBlur(mask, maskBlur, 5);
-					imgSrcArr[t].copyTo(lastImg, maskBlur);
-					//	imshow("目标", lastImg);//显示结果
-					//string name = "E:/Projects/OpenCV/DAVIS-data/image/output/第" + to_string(t + 1) + "帧.bmp";
-					//imwrite(name, lastImg);
-					videowriter << lastImg;
+				int t = waitKey();
+				char c = (char)t;
+				if (c == 'n') {   //键盘输入S实现分割
+					break;
 				}
-
-				//清除容器，释放内存
-				for (int i = imgSrcArr.size() - 1;i >= 0;i--) {
-					imgSrcArr[i].release();
-				}
-				imgSrcArr.clear();
-				for (int i = maskArr.size() - 1;i >= 0;i--) {
-					maskArr[i].release();
-				}
-				maskArr.clear();
-				printf("第%d段分割结束\n", times + 1);
-
-				videowriter.release();
-				//break;
+				if (c == 'r') {   //键盘输入S实现分割
+					cout << endl;
+					gcapp.reset();
+					gcapp.showImage();
+				}				
 			}
-		}
+
+		Mat mask;
+		gcapp.mask.copyTo(mask);
+		keyMaskArr.push_back(mask);
+		string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/paragliding-launch/" + to_string(i) + ".bmp";
+		imwrite(name, mask);
 	}
 
-	//videowriter.release();
-	video.release();
-	imgSrcArr.clear();
-	destroyAllWindows();
-	return 0;
+	printf("标记结束\n");
+	imshow("目标", imgSrcArr[0]);//显示结果
+	while (1)
+	{
+		int t = waitKey();
+		if (t == 27) break; //27就是esc,随时生效
+
+		char c = (char)t;
+		if (c == 's')   //键盘输入S实现分割
+		{
+			//imwrite("E:/Projects/OpenCV/DAVIS-data/image/0mask.bmp", gcapp.mask);
+
+			printf("第%d段开始分割\n", times + 1);
+			double _time = static_cast<double>(getTickCount());
+			Bilateral bilateral(imgSrcArr);
+			bilateral.InitGmms(keyMaskArr, key);//gcapp.mask   tureMask
+			bilateral.run(maskArr);
+			_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
+			printf("总用时为%f\n", _time);//显示时间
+
+			for (int t = 0; t < imgSrcArr.size(); t++)
+			{
+				Mat mask = maskArr[t];
+				Mat maskBlur;
+				Mat lastImg(maskArr[t].size(), CV_8UC3, cv::Scalar(155, 155, 155));
+				medianBlur(mask, maskBlur, 5);
+				imgSrcArr[t].copyTo(lastImg, maskBlur);
+				//	imshow("目标", lastImg);//显示结果
+				//string name = "E:/Projects/OpenCV/DAVIS-data/image/output/第" + to_string(t + 1) + "帧.bmp";
+				//imwrite(name, lastImg);
+				videowriter << lastImg;
+			}
+
+			//清除容器，释放内存
+			for (int i = imgSrcArr.size() - 1;i >= 0;i--) {
+				imgSrcArr[i].release();
+			}
+			imgSrcArr.clear();
+			for (int i = maskArr.size() - 1;i >= 0;i--) {
+				maskArr[i].release();
+			}
+			maskArr.clear();
+			printf("第%d段分割结束\n", times + 1);
+
+			videowriter.release();
+			//break;
+		}
+	}
+}
+
+//videowriter.release();
+video.release();
+imgSrcArr.clear();
+cv::destroyAllWindows();
+return 0;
 }

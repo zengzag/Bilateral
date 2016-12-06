@@ -37,7 +37,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 				if (maskArr[t].at<uchar>(x, y) == GC_BGD) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
 					grid.at<Vec< int, 4 > >(point)[bgdSum] += 3;
-					/*if (point[0] > 0) {
+					if (point[0] > 0) {
 						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
@@ -49,6 +49,18 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
+					if (point[3] > 0) {
+						int pointN[6] = { point[0] ,point[1],point[2],point[3] - 1,point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[4] > 0) {
+						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] - 1,point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[5] > 0) {
+						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] - 1 };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
 					if (point[0] < gridSize[0] - 1) {
 						int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
@@ -58,14 +70,26 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
 					if (point[2] < gridSize[2] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
+						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}*/
+					}
+					if (point[3] < gridSize[3] - 1) {
+						int pointN[6] = { point[0] ,point[1],point[2],point[3] + 1,point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[4] < gridSize[4] - 1) {
+						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4] + 1,point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[5] < gridSize[5] - 1) {
+						int pointN[6] = { point[0],point[1],point[2],point[3],point[4],point[5] + 1 };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
 				}
 				else if (maskArr[t].at<uchar>(x, y) == GC_FGD/*GC_FGD*/) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
 					grid.at<Vec< int, 4 > >(point)[fgdSum] += 3;
-					/*if (point[0] > 0) {
+					if (point[0] > 0) {
 						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
 					}
@@ -75,6 +99,18 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 					}
 					if (point[2] > 0) {
 						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[3] > 0) {
+						int pointN[6] = { point[0] ,point[1],point[2],point[3] - 1,point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[4] > 0) {
+						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] - 1,point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[5] > 0) {
+						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] - 1 };
 						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
 					}
 					if (point[0] < gridSize[0] - 1) {
@@ -88,7 +124,19 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 					if (point[2] < gridSize[2] - 1) {
 						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}*/
+					}
+					if (point[3] < gridSize[3] - 1) {
+						int pointN[6] = { point[0] ,point[1],point[2],point[3] + 1,point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[4] < gridSize[4] - 1) {
+						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] + 1,point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[5] < gridSize[5] - 1) {
+						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] + 1 };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
 				}
 			}
 		}
@@ -112,7 +160,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 								Vec3f color = gridColor.at<Vec3f>(point);
 								bgdSamples.push_back(color);
 								for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
-									double weight = bgdcount*exp(-2*(t/3 - tGmm)*(t/3 - tGmm));
+									double weight = bgdcount*exp(-2 * (t / 3 - tGmm)*(t / 3 - tGmm));
 									//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
 									bgdWeight[tGmm].push_back(weight);
 								}
@@ -273,7 +321,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 
 	double bata = calcBeta(imgSrcArr[0]);
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
-	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
+	int edgeCount = 2 * 64 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
 	int eCount = 0;
 	for (int t = 0; t < gridSize[0]; t++) {
@@ -299,17 +347,17 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								double toSinkSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
-								if (fromSourceSum >= 0 && toSinkSum == 0) {
+								if (fromSourceSum > 20 && toSinkSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else if (fromSourceSum == 0 && toSinkSum >= 0) {
+								else if (fromSourceSum == 0 && toSinkSum > 20) {
 									fromSource = 9999;
 									toSink = 0;
 								}
 								else {
-									fromSource = -log(bgdGMM(color))*sqrt(toSinkSum+1);
-									toSink = -log(fgdGMM(color))*sqrt(fromSourceSum+1);//*sqrt(pixCount)
+									fromSource = -log(bgdGMM(color))*sqrt(pixCount);
+									toSink = -log(fgdGMM(color))*sqrt(pixCount);
 								}
 
 								//原方法
@@ -322,8 +370,8 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 
 								//平滑项
 								for (int tN = t; tN > t - 2 && tN >= 0&& tN < gridSize[0]; tN--) {
-									for (int xN = x+1 ; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
-										for (int yN = y + 1; yN > y - 2 && yN >= 0 && yN < gridSize[2]; yN--) {
+									for (int xN = x ; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
+										for (int yN = y ; yN > y - 2 && yN >= 0 && yN < gridSize[2]; yN--) {
 											for (int rN = r; rN > r - 2 && rN >= 0 && rN < gridSize[3]; rN--) {
 												for (int gN = g; gN > g - 2 && gN >= 0 && gN < gridSize[4]; gN--) {
 													for (int bN = b ; bN > b - 2 && bN >= 0 && bN < gridSize[5]; bN--) {
@@ -333,7 +381,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 															double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
 															Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 															double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-															double w = 1.5 * e * sqrt(num);
+															double w = 1.0 * e * sqrt(num);
 															graph.addEdges(vtxIdx, vtxIdxNew, w, w);
 															eCount++;
 														}
