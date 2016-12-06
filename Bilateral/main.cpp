@@ -12,8 +12,7 @@ using namespace cv;
 
 VideoCapture video;
 VideoWriter videowriter;
-std::vector<Mat> imgSrcArr, maskArr;
-std::vector<std::vector<Mat> > imgSrcArrArr;
+std::vector<Mat> imgSrcArr, maskArr, keyMaskArr;
 
 const Scalar RED = Scalar(0, 0, 255);
 const Scalar PINK = Scalar(230, 130, 255);
@@ -299,30 +298,52 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/333.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/paragliding-launch.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
-	Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
+	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
 
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
-		int key = 5;
-		for (int i = 0;i < 9;i++) {
+		int key[5] = {4,13,22,31,40};
+		for (int i = 0;i < 45;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		gcapp.reset();
-		help();
-		const string winName = "原图像";
-		namedWindow(winName, WINDOW_AUTOSIZE);
-		setMouseCallback(winName, on_mouse, 0);
+		for (int i = 0;i < 5;i++) {
+			string name = "E:/Projects/OpenCV/DAVIS-data/image/output/" + to_string(i) + ".bmp";
+			Mat mask = imread(name, 0);
+			keyMaskArr.push_back(mask);
+			
+		}
+		//for (int i = 0;i < 5;i++) {
+		//	gcapp.reset();
+		//	const string winName = "原图像";
+		//	namedWindow(winName, WINDOW_AUTOSIZE);
+		//	setMouseCallback(winName, on_mouse, 0);
+		//	gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
+		//	gcapp.showImage();
+		//	printf("第%d帧\n", key[i]);
+		//	while (1)
+		//	{
+		//		int t = waitKey();
+		//		char c = (char)t;
+		//		if (c == 'n') {   //键盘输入S实现分割
+		//			break;
+		//		}
+		//	}
+		//	Mat mask;
+		//	gcapp.mask.copyTo(mask);
+		//	keyMaskArr.push_back(mask);
+		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/output/" + to_string(i) + ".bmp";
+		//	imwrite(name, mask);
+		//}
 
-		gcapp.setImageAndWinName(imgSrcArr[key], winName);
-		gcapp.showImage();
-
+		printf("标记结束\n");
+		imshow("目标", imgSrcArr[0]);//显示结果
 		while (1)
 		{
 			int t = waitKey();
@@ -336,7 +357,7 @@ int main() {
 				printf("第%d段开始分割\n", times + 1);
 				double _time = static_cast<double>(getTickCount());
 				Bilateral bilateral(imgSrcArr);
-				bilateral.InitGmms(gcapp.mask, key);//gcapp.mask   tureMask
+				bilateral.InitGmms(keyMaskArr, key);//gcapp.mask   tureMask
 				bilateral.run(maskArr);
 				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 				printf("总用时为%f\n", _time);//显示时间

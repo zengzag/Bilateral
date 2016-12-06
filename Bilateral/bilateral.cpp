@@ -13,191 +13,179 @@ Bilateral::~Bilateral()
 		imgSrcArr[i].release();
 	}
 	imgSrcArr.clear();
-	bgModel.release();
-	fgModel.release();
+	bgModelArr.clear();
+	fgModelArr.clear();
 	grid.release();
 }
 
-void Bilateral::InitGmms(Mat& mask, int index)
+void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 {
 	double _time = static_cast<double>(getTickCount());//计时
 
-	std::vector<Vec3f> bgdSamples;    //从背景点存储背景颜色
-	std::vector<Vec3f> fgdSamples;    //从前景点存储前景颜色
-
+	int gmmSize = maskArr.size();
 	int tSize = imgSrcArr.size();
 	int xSize = imgSrcArr[0].rows;
 	int ySize = imgSrcArr[0].cols;
 	int point[6] = { 0,0,0,0,0,0 };
 
-	for (int x = 0; x < xSize; x++)
-	{
-		for (int y = 0; y < ySize; y++)
+	for (int t = 0; t < gmmSize; t++) {
+		for (int x = 0; x < xSize; x++)
 		{
-			uchar a = mask.at<uchar>(x, y);
-			if (mask.at<uchar>(x, y) == GC_BGD) {
-				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
-				bgdSamples.push_back(color);
-				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-				grid.at<Vec< int, 4 > >(point)[bgdSum] += 3;
-				if (point[0] > 0) {
-					int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+			for (int y = 0; y < ySize; y++)
+			{
+				uchar a = maskArr[t].at<uchar>(x, y);
+				if (maskArr[t].at<uchar>(x, y) == GC_BGD) {
+					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 3;
+					/*if (point[0] > 0) {
+						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[1] > 0) {
+						int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[2] > 0) {
+						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[0] < gridSize[0] - 1) {
+						int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[1] < gridSize[1] - 1) {
+						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}
+					if (point[2] < gridSize[2] - 1) {
+						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
+					}*/
 				}
-				if (point[1] > 0) {
-					int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[2] > 0) {
-					int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[3] > 0) {
-					int pointN[6] = { point[0],point[1],point[2],point[3] - 1,point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[4] > 0) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4] - 1,point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[5] > 0) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4],point[5] - 1 };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[0] < gridSize[0] - 1) {
-					int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[1] < gridSize[1] - 1) {
-					int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[2] < gridSize[2] - 1) {
-					int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[3] < gridSize[3] - 1) {
-					int pointN[6] = { point[0],point[1],point[2],point[3] + 1,point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[4] < gridSize[4] - 1) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4] + 1,point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-				if (point[5] < gridSize[5] - 1) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4],point[5] + 1 };
-					grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-				}
-			}
-			else if (mask.at<uchar>(x, y) == GC_FGD/*GC_FGD*/) {
-				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
-				fgdSamples.push_back(color);
-				getGridPoint(index, Point(x, y), point, tSize, xSize, ySize);
-				grid.at<Vec< int, 4 > >(point)[fgdSum] += 3;
-				if (point[0] > 0) {
-					int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[1] > 0) {
-					int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[2] > 0) {
-					int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[3] > 0) {
-					int pointN[6] = { point[0],point[1],point[2],point[3] - 1,point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[4] > 0) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4] - 1,point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[5] > 0) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4],point[5] - 1 };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[0] < gridSize[0] - 1) {
-					int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[1] < gridSize[1] - 1) {
-					int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[2] < gridSize[2] - 1) {
-					int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[3] < gridSize[3] - 1) {
-					int pointN[6] = { point[0],point[1],point[2],point[3] + 1,point[4],point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[4] < gridSize[4] - 1) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4] + 1,point[5] };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-				}
-				if (point[5] < gridSize[5] - 1) {
-					int pointN[6] = { point[0],point[1],point[2],point[3],point[4],point[5] + 1 };
-					grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+				else if (maskArr[t].at<uchar>(x, y) == GC_FGD/*GC_FGD*/) {
+					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 3;
+					/*if (point[0] > 0) {
+						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[1] > 0) {
+						int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[2] > 0) {
+						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[0] < gridSize[0] - 1) {
+						int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[1] < gridSize[1] - 1) {
+						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}
+					if (point[2] < gridSize[2] - 1) {
+						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
+						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
+					}*/
 				}
 			}
-			/*else if (mask.at<uchar>(x, y) == GC_PR_FGD) {
-				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
-				fgdSamples.push_back(color);
-			}
-			else if (mask.at<uchar>(x, y) == GC_PR_BGD) {
-				Vec3f color = (Vec3f)imgSrcArr[index].at<Vec3b>(x, y);
-				bgdSamples.push_back(color);
-			}*/
 		}
 	}
 
-	//高斯模型建立
-	GMM bgdGMM(bgModel), fgdGMM(fgModel);
-	const int kMeansItCount = 10;  //迭代次数  
-	const int kMeansType = KMEANS_PP_CENTERS; //Use kmeans++ center initialization by Arthur and Vassilvitskii  
-	Mat bgdLabels, fgdLabels; //记录背景和前景的像素样本集中每个像素对应GMM的哪个高斯模型
+	std::vector<Vec3f> bgdSamples;    //从背景点存储背景颜色
+	std::vector<Vec3f> fgdSamples;    //从前景点存储前景颜色
+	std::vector<std::vector<double> > bgdWeight(gmmSize);    //从背景点存储背景权值
+	std::vector<std::vector<double> > fgdWeight(gmmSize);    //从前景点存储前景权值
 
-	//kmeans进行分类
-	Mat _bgdSamples((int)bgdSamples.size(), 3, CV_32FC1, &bgdSamples[0][0]);
-	kmeans(_bgdSamples, GMM::componentsCount, bgdLabels,
-		TermCriteria(CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType);
-	Mat _fgdSamples((int)fgdSamples.size(), 3, CV_32FC1, &fgdSamples[0][0]);
-	kmeans(_fgdSamples, GMM::componentsCount, fgdLabels,
-		TermCriteria(CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType);
-
-	//分类后的结果用来训练GMMs（初始化）
-	bgdGMM.initLearning();
-	for (int i = 0; i < (int)bgdSamples.size(); i++)
-		bgdGMM.addSample(bgdLabels.at<int>(i, 0), bgdSamples[i]);
-	bgdGMM.endLearning();
-	fgdGMM.initLearning();
-	for (int i = 0; i < (int)fgdSamples.size(); i++)
-		fgdGMM.addSample(fgdLabels.at<int>(i, 0), fgdSamples[i]);
-	fgdGMM.endLearning();
-
-	//训练GMMs模型
-	for (int i = 0; i < (int)bgdSamples.size(); i++) {
-		Vec3d color = bgdSamples[i];
-		bgdLabels.at<int>(i, 0) = bgdGMM.whichComponent(color);
+	for (int t = 0; t < gridSize[0]; t++) {
+		for (int x = 0; x < gridSize[1]; x++) {
+			for (int y = 0; y < gridSize[2]; y++) {
+				for (int r = 0; r < gridSize[3]; r++) {
+					for (int g = 0; g < gridSize[4]; g++) {
+						for (int b = 0; b < gridSize[5]; b++) {
+							int point[6] = { t,x,y,r,g,b };
+							int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
+							int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
+							if (bgdcount > 0) {
+								Vec3f color = gridColor.at<Vec3f>(point);
+								bgdSamples.push_back(color);
+								for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
+									double weight = bgdcount*exp(-2*(t/3 - tGmm)*(t/3 - tGmm));
+									//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
+									bgdWeight[tGmm].push_back(weight);
+								}
+							}
+							if (fgdcount > 0) {
+								Vec3f color = gridColor.at<Vec3f>(point);
+								fgdSamples.push_back(color);
+								for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
+									double weight = fgdcount*exp(-2 * (t/3 - tGmm)*(t/3 - tGmm));
+									//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
+									fgdWeight[tGmm].push_back(weight);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
-	for (int i = 0; i < (int)fgdSamples.size(); i++) {
-		Vec3d color = fgdSamples[i];
-		fgdLabels.at<int>(i, 0) = fgdGMM.whichComponent(color);
+	for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
+		Mat bgModel, fgModel;
+		GMM bgdGMM(bgModel), fgdGMM(fgModel);
+
+		const int kMeansItCount = 10;  //迭代次数  
+		const int kMeansType = KMEANS_PP_CENTERS; //Use kmeans++ center initialization by Arthur and Vassilvitskii  
+		Mat bgdLabels, fgdLabels; //记录背景和前景的像素样本集中每个像素对应GMM的哪个高斯模型
+
+								  //kmeans进行分类
+		Mat _bgdSamples((int)bgdSamples.size(), 3, CV_32FC1, &bgdSamples[0][0]);
+		kmeans(_bgdSamples, GMM::componentsCount, bgdLabels,
+			TermCriteria(CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType);
+		Mat _fgdSamples((int)fgdSamples.size(), 3, CV_32FC1, &fgdSamples[0][0]);
+		kmeans(_fgdSamples, GMM::componentsCount, fgdLabels,
+			TermCriteria(CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType);
+
+		//分类后的结果用来训练GMMs（初始化）
+		bgdGMM.initLearning();
+		for (int i = 0; i < (int)bgdSamples.size(); i++)
+			bgdGMM.addSample(bgdLabels.at<int>(i, 0), bgdSamples[i], bgdWeight[tGmm][i]);
+		bgdGMM.endLearning();
+		fgdGMM.initLearning();
+		for (int i = 0; i < (int)fgdSamples.size(); i++)
+			fgdGMM.addSample(fgdLabels.at<int>(i, 0), fgdSamples[i], fgdWeight[tGmm][i]);
+		fgdGMM.endLearning();
+		for (int times = 0; times < 5; times++)
+		{
+			//训练GMMs模型
+			for (int i = 0; i < (int)bgdSamples.size(); i++) {
+				Vec3d color = bgdSamples[i];
+				bgdLabels.at<int>(i, 0) = bgdGMM.whichComponent(color);
+			}
+
+			for (int i = 0; i < (int)fgdSamples.size(); i++) {
+				Vec3d color = fgdSamples[i];
+				fgdLabels.at<int>(i, 0) = fgdGMM.whichComponent(color);
+			}
+
+			bgdGMM.initLearning();
+			for (int i = 0; i < (int)bgdSamples.size(); i++)
+				bgdGMM.addSample(bgdLabels.at<int>(i, 0), bgdSamples[i], bgdWeight[tGmm][i]);
+			bgdGMM.endLearning();
+			fgdGMM.initLearning();
+			for (int i = 0; i < (int)fgdSamples.size(); i++)
+				fgdGMM.addSample(fgdLabels.at<int>(i, 0), fgdSamples[i], fgdWeight[tGmm][i]);
+			fgdGMM.endLearning();
+		}
+
+		bgModelArr.push_back(bgModel); 
+		fgModelArr.push_back(fgModel);
+
 	}
-
-	bgdGMM.initLearning();
-	for (int i = 0; i < (int)bgdSamples.size(); i++)
-		bgdGMM.addSample(bgdLabels.at<int>(i, 0), bgdSamples[i]);
-	bgdGMM.endLearning();
-	fgdGMM.initLearning();
-	for (int i = 0; i < (int)fgdSamples.size(); i++)
-		fgdGMM.addSample(fgdLabels.at<int>(i, 0), fgdSamples[i]);
-	fgdGMM.endLearning();
-
+	
 	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 	printf("高斯建模用时%f\n", _time);//显示时间
 }
@@ -280,50 +268,48 @@ static double calcBeta(const Mat& img)
 	return beta;
 }
 
-void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<double>& graph) {
+void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	double _time = static_cast<double>(getTickCount());
 
 	double bata = calcBeta(imgSrcArr[0]);
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
-	int edgeCount = 2 * 64 * vtxCount;  //边数，需要考虑图边界的边的缺失
+	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
-
+	int eCount = 0;
 	for (int t = 0; t < gridSize[0]; t++) {
+		int gmmT = t / 3;
+		GMM bgdGMM(bgModelArr[gmmT]), fgdGMM(fgModelArr[gmmT]);
+
 		for (int x = 0; x < gridSize[1]; x++) {
 			for (int y = 0; y < gridSize[2]; y++) {
 				for (int r = 0; r < gridSize[3]; r++) {
 					for (int g = 0; g < gridSize[4]; g++) {
 						for (int b = 0; b < gridSize[5]; b++) {
 							int point[6] = { t,x,y,r,g,b };
-
-							if (grid.at<Vec< int, 4 > >(point)[pixSum] >0) {
+							int pixCount = grid.at<Vec< int, 4 > >(point)[pixSum];
+							if (pixCount > 0) {
 								int vtxIdx = graph.addVtx();//存在像素点映射就加顶点
 
 								//先验项
 								grid.at<Vec< int, 4 > >(point)[vIdx] = vtxIdx;
 
-								//Vec3b color;//计算grid中顶点对应的颜色
-								//color[0] = (r * 256 + 256 / 2) / gridSize[3];//多加256/2是为了把颜色移到方格中心
-								//color[1] = (g * 256 + 256 / 2) / gridSize[4];
-								//color[2] = (b * 256 + 256 / 2) / gridSize[5];
 								Vec3f color = gridColor.at<Vec3f>(point);
-
 								double fromSource, toSink;
 
 								double toSinkSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
-								if (fromSourceSum >= 20 && toSinkSum == 0) {
+								if (fromSourceSum >= 0 && toSinkSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else if (fromSourceSum == 0 && toSinkSum >= 20) {
+								else if (fromSourceSum == 0 && toSinkSum >= 0) {
 									fromSource = 9999;
 									toSink = 0;
 								}
 								else {
-									fromSource = -log(bgdGMM(color))* sqrt(toSinkSum + 1);
-									toSink = -log(fgdGMM(color))* sqrt(fromSourceSum + 1);
+									fromSource = -log(bgdGMM(color))*sqrt(toSinkSum+1);
+									toSink = -log(fgdGMM(color))*sqrt(fromSourceSum+1);//*sqrt(pixCount)
 								}
 
 								//原方法
@@ -335,82 +321,21 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 
 
 								//平滑项
-								//if (t > 0) {
-								//	int pointN[6] = { t - 1,x,y,r,g,b };
-								//	if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
-								//		double num = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-								//		Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-								//		double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-								//		double w = 10 * e * log(num);
-								//		graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
-								//	}
-								//}
-								//if (x > 0) {
-								//	int pointN[6] = { t,x - 1,y,r,g,b };
-								//	if (grid.at<Vec< int, 4 >>(pointN)[pixSum] > 0) {
-								//		double num = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-								//		Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-								//		double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-								//		double w = 10 * e * log(num);
-								//		graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
-								//	}
-								//}
-								//if (y > 0) {
-								//	int pointN[6] = { t,x,y - 1,r,g,b };
-								//	if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
-								//		double num = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-								//		Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-								//		double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-								//		double w = 10 * e * log(num);
-								//		graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
-								//	}
-								//}
-								//if (r > 0) {
-								//	int pointN[6] = { t,x,y,r - 1,g,b };
-								//	if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
-								//		double num = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-								//		Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-								//		double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-								//		double w = 10 * e * log(num);
-								//		graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
-								//	}
-								//}
-								//if (g > 0) {
-								//	int pointN[6] = { t,x,y,r,g - 1,b };
-								//	if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
-								//		double num = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-								//		Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-								//		double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-								//		double w = 10 * e * log(num);
-								//		graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
-								//	}
-								//}
-								//if (b > 0) {
-								//	int pointN[6] = { t,x,y,r,g,b - 1 };
-								//	if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
-								//		double num = grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1;
-								//		Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-								//		double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-								//		double w = 10 * e * log(num);
-								//		graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
-								//	}
-								//}
-								int count = 0;
-								for (int tN = t; tN > t - 2 && tN >= 0; tN--) {
-									for (int xN = x; xN > x - 2 && xN >= 0; xN--) {
-										for (int yN = y; yN > y - 2 && yN >= 0; yN--) {
-											for (int rN = r; rN > r - 2 && rN >= 0; rN--) {
-												for (int gN = g; gN > g - 2 && gN >= 0; gN--) {
-													for (int bN = b; bN > b - 2 && bN >= 0; bN--) {
+								for (int tN = t; tN > t - 2 && tN >= 0&& tN < gridSize[0]; tN--) {
+									for (int xN = x+1 ; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
+										for (int yN = y + 1; yN > y - 2 && yN >= 0 && yN < gridSize[2]; yN--) {
+											for (int rN = r; rN > r - 2 && rN >= 0 && rN < gridSize[3]; rN--) {
+												for (int gN = g; gN > g - 2 && gN >= 0 && gN < gridSize[4]; gN--) {
+													for (int bN = b ; bN > b - 2 && bN >= 0 && bN < gridSize[5]; bN--) {
 														int pointN[6] = { tN,xN,yN,rN,gN,bN };
-														count++;
-														if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0 && count > 1) {
-															double num =sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
+														int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
+														if (grid.at<Vec< int, 4 > >(pointN)[pixSum]>0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
+															double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
 															Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 															double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-															double w = 1.0 * e * sqrt(num);
-															graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
-
+															double w = 1.5 * e * sqrt(num);
+															graph.addEdges(vtxIdx, vtxIdxNew, w, w);
+															eCount++;
 														}
 													}
 												}
@@ -430,6 +355,8 @@ void Bilateral::constructGCGraph(const GMM& bgdGMM, const GMM& fgdGMM, GCGraph<d
 
 	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 	printf("图割构图用时 %f\n", _time);//显示时间
+	printf("顶点的总数 %d\n", vtxCount);
+	printf("边的总数 %d\n", eCount);
 }
 
 
@@ -557,11 +484,9 @@ void Bilateral::run(std::vector<Mat>& maskArr) {
 		Mat mask = Mat::zeros(imgSrcArr[0].rows, imgSrcArr[0].cols, CV_8UC1);
 		maskArr.push_back(mask);
 	}
-
-	GMM bgdGMM(bgModel), fgdGMM(fgModel);//前背景模型
 	GCGraph<double> graph;//图割
 
-	constructGCGraph(bgdGMM, fgdGMM, graph);
+	constructGCGraph(graph);
 	//getColor();
 	estimateSegmentation(graph, maskArr);
 
