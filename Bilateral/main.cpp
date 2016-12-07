@@ -55,12 +55,12 @@ public:
 	const string* winName;//窗口名
 	const Mat* image; //输入图
 	Mat mask;
-	//Mat res;
+	Mat res;
 	uchar rectState, lblsState, prLblsState;
 	bool isInitialized;
 
 	Rect rect;
-	vector<Point> fgdPxls, bgdPxls, prFgdPxls, prBgdPxls; //前景、背景、可能前景、可能背景点
+
 public:
 	enum { NOT_SET = 0, IN_PROCESS = 1, SET = 2 };
 	static const int radius = 2;
@@ -79,14 +79,13 @@ private:
 void GCApplication::reset()
 {
 	if (!mask.empty())
-		mask.setTo(Scalar::all(GC_BGD));
-	bgdPxls.clear(); fgdPxls.clear();
-	prBgdPxls.clear();  prFgdPxls.clear();
+		mask.setTo(Scalar::all(GC_PR_FGD));
+	if (!res.empty())
+		image->copyTo(res);
 	isInitialized = false;
-	mask.setTo(GC_PR_FGD);
 	rectState = SET;
 	lblsState = NOT_SET;
-	prLblsState = NOT_SET;
+	prLblsState = NOT_SET;	
 }
 
 void GCApplication::setImageAndWinName(const Mat& _image, const string& _winName)
@@ -96,37 +95,12 @@ void GCApplication::setImageAndWinName(const Mat& _image, const string& _winName
 	image = &_image;
 	winName = &_winName;
 	mask.create(image->size(), CV_8UC1);
+	image->copyTo(res);
 	reset();
 }
 
 void GCApplication::showImage() const
 {
-	if (image->empty() || winName->empty())
-		return;
-
-	Mat res;
-	Mat binMask;
-	if (!isInitialized)
-		image->copyTo(res);
-	else
-	{
-		getBinMask(mask, binMask);
-		image->copyTo(res, binMask);
-	}
-
-	vector<Point>::const_iterator it;
-	for (it = bgdPxls.begin(); it != bgdPxls.end(); ++it)
-		circle(res, *it, 0, BLUE, thickness);
-	for (it = fgdPxls.begin(); it != fgdPxls.end(); ++it)
-		circle(res, *it, 0, RED, thickness);
-	for (it = prBgdPxls.begin(); it != prBgdPxls.end(); ++it)
-		circle(res, *it, radius, LIGHTBLUE, thickness);
-	for (it = prFgdPxls.begin(); it != prFgdPxls.end(); ++it)
-		circle(res, *it, radius, PINK, thickness);
-
-	if (rectState == IN_PROCESS || rectState == SET)
-		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), GREEN, 2);
-
 	imshow(*winName, res);
 }
 
@@ -143,30 +117,30 @@ void GCApplication::setRectInMask()
 
 void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 {
-	vector<Point> *bpxls, *fpxls;
+	Scalar bpxls, fpxls;
 	uchar bvalue, fvalue;
 	if (!isPr)
 	{
-		bpxls = &bgdPxls;
-		fpxls = &fgdPxls;
+		bpxls = BLUE;
+		fpxls = RED;
 		bvalue = GC_BGD;
 		fvalue = GC_FGD;
 	}
 	else
 	{
-		bpxls = &prBgdPxls;
-		fpxls = &prFgdPxls;
+		bpxls = LIGHTBLUE;
+		fpxls = PINK;
 		bvalue = GC_BGD;
 		fvalue = GC_FGD;
 	}
 	if (flags & BGD_KEY)
 	{
-		bpxls->push_back(p);
+		circle(res, p, radius, LIGHTBLUE, thickness);;
 		circle(mask, p, radius, bvalue, thickness);
 	}
 	if (flags & FGD_KEY)
 	{
-		fpxls->push_back(p);
+		circle(res, p, radius, PINK, thickness);;
 		circle(mask, p, radius, fvalue, thickness);
 	}
 }
@@ -174,11 +148,11 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 void GCApplication::reLblsInMask(Point pCurrent, Point pCenter, bool isFGD)
 {
 	uchar value = isFGD ? GC_FGD : GC_BGD;
-	vector<Point> *pxls = isFGD ? &fgdPxls : &bgdPxls;
+	Scalar pxls = isFGD ? RED : BLUE;
 
 	if (mask.at<uchar>(pCurrent) == GC_PR_FGD) {
-		pxls->push_back(pCurrent);
-		circle(mask, pCurrent, 0, value, thickness);
+		circle(res, pCurrent, 1, pxls, thickness);
+		circle(mask, pCurrent, 1, value, thickness);
 		Point p;
 		for (p.x = pCurrent.x - 1; p.x < pCurrent.x + 2;p.x++) {
 			for (p.y = pCurrent.y - 1; p.y < pCurrent.y + 2;p.y++) {
@@ -237,7 +211,6 @@ void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 			rect = Rect(Point(rect.x, rect.y), Point(x, y));
 			rectState = SET;
 			setRectInMask();
-			CV_Assert(bgdPxls.empty() && fgdPxls.empty());
 			showImage();
 		}
 		if (lblsState == IN_PROCESS)
@@ -266,7 +239,6 @@ void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 		if (rectState == IN_PROCESS)
 		{
 			rect = Rect(Point(rect.x, rect.y), Point(x, y));
-			CV_Assert(bgdPxls.empty() && fgdPxls.empty());
 			showImage();
 		}
 		else if (lblsState == IN_PROCESS)
@@ -300,7 +272,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/222.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/111.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
@@ -337,13 +309,13 @@ int main() {
 					break;
 				}
 				if (c == 'r') {   //键盘输入S实现分割
-					cout << endl;
 					gcapp.reset();
 					gcapp.showImage();
 				}				
 			}
 
 		Mat mask;
+		//medianBlur(gcapp.mask, mask, 3);
 		gcapp.mask.copyTo(mask);
 		keyMaskArr.push_back(mask);
 		string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/paragliding-launch/" + to_string(i) + ".bmp";
@@ -374,7 +346,7 @@ int main() {
 			{
 				Mat mask = maskArr[t];
 				Mat maskBlur;
-				Mat lastImg(maskArr[t].size(), CV_8UC3, cv::Scalar(155, 155, 155));
+				Mat lastImg(maskArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
 				medianBlur(mask, maskBlur, 5);
 				imgSrcArr[t].copyTo(lastImg, maskBlur);
 				//	imshow("目标", lastImg);//显示结果
