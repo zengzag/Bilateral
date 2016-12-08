@@ -272,7 +272,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/111.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/Interactive1.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
@@ -280,8 +280,8 @@ int main() {
 	//CAP_PROP_FRAME_COUNT
 	for (int times = 0; times < 1; times++)
 	{
-		int key[5] = { 4,13,22,31,40 };
-		for (int i = 0;i < 45;i++) {
+		int key[3] = { 4,13,22};
+		for (int i = 0;i < 27;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
@@ -293,7 +293,7 @@ int main() {
 			keyMaskArr.push_back(mask);
 
 		}*/
-		for (int i = 0;i < 5;i++) {
+		for (int i = 0;i < 3;i++) {
 			gcapp.reset();
 			const string winName = "Ô­Í¼Ïñ";
 			namedWindow(winName, WINDOW_AUTOSIZE);
