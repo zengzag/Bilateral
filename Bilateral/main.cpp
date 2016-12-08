@@ -58,7 +58,6 @@ public:
 	Mat res;
 	uchar rectState, lblsState, prLblsState;
 	bool isInitialized;
-
 	Rect rect;
 
 public:
@@ -79,11 +78,11 @@ private:
 void GCApplication::reset()
 {
 	if (!mask.empty())
-		mask.setTo(Scalar::all(GC_PR_FGD));
+		mask.setTo(Scalar::all(GC_BGD));
 	if (!res.empty())
 		image->copyTo(res);
 	isInitialized = false;
-	rectState = SET;
+	rectState = NOT_SET;
 	lblsState = NOT_SET;
 	prLblsState = NOT_SET;	
 }
@@ -101,6 +100,11 @@ void GCApplication::setImageAndWinName(const Mat& _image, const string& _winName
 
 void GCApplication::showImage() const
 {
+
+	if (rectState == IN_PROCESS) {
+		image->copyTo(res);
+		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), GREEN, 2);
+	}
 	imshow(*winName, res);
 }
 
@@ -272,7 +276,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/Interactive1.avi");
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/333.avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
