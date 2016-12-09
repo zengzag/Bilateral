@@ -39,9 +39,13 @@ GMM::GMM(Mat& _model)
 double GMM::operator()(const Vec3d color) const
 {
 	double res = 0;
-	for (int ci = 0; ci < componentsCount; ci++)
-		res += coefs[ci] * (*this)(ci, color);
-	return res;
+	double max = 0;
+	for (int ci = 0; ci < componentsCount; ci++) {
+		//res += coefs[ci] * (*this)(ci, color);
+		res = (*this)(ci, color);
+		max = max < res ? res : max;
+	}
+	return max;
 }
 
 //计算一个像素（由color=（B,G,R）三维double型向量来表示）属于第ci个高斯模型的概率。  

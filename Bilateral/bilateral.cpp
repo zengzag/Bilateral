@@ -70,7 +70,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
 					if (point[2] < gridSize[2] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] };
+						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
 					if (point[3] < gridSize[3] - 1) {
@@ -78,7 +78,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
 					if (point[4] < gridSize[4] - 1) {
-						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4] + 1,point[5] };
+						int pointN[6] = { point[0],point[1],point[2],point[3],point[4] + 1,point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
 					if (point[5] < gridSize[5] - 1) {
@@ -321,9 +321,9 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 
 	double bata = calcBeta(imgSrcArr[0]);
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
-	int edgeCount = 2 * 64 * vtxCount;  //边数，需要考虑图边界的边的缺失
+	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
-	int eCount = 0;
+	int eCount = 0, eCount2 = 0;
 	for (int t = 0; t < gridSize[0]; t++) {
 		int gmmT = t / 3;
 		GMM bgdGMM(bgModelArr[gmmT]), fgdGMM(fgModelArr[gmmT]);
@@ -391,6 +391,28 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
+								for (int xN = 0; xN < x ; xN++) {
+									for (int yN = 0; yN < gridSize[2]; yN++) {
+										int pointN[6] = { t,xN,yN,r,g,b };
+										int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
+										int vNewPixCount = grid.at<Vec< int, 4 > >(pointN)[pixSum];
+										
+										if (vNewPixCount >0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
+											double vPixSumDiff = (double)pixCount/(double)vNewPixCount;
+
+											Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+											double colorDst = (diff.dot(diff));
+											if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 32.0) {
+												double w = 1.0 * exp(-bata*colorDst) * sqrt(vNewPixCount);
+												graph.addEdges(vtxIdx, vtxIdxNew, w, w);
+												eCount++;
+												eCount2++;
+											};
+										}
+
+									}
+								}
+						
 
 							}
 						}
@@ -405,6 +427,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	printf("图割构图用时 %f\n", _time);//显示时间
 	printf("顶点的总数 %d\n", vtxCount);
 	printf("边的总数 %d\n", eCount);
+	printf("E3边的总数 %d\n", eCount2);
 }
 
 

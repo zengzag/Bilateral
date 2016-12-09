@@ -69,6 +69,7 @@ public:
 	void setImageAndWinName(const Mat& _image, const string& _winName);
 	void showImage() const;
 	void mouseClick(int event, int x, int y, int flags, void* param);
+	void notSetRect();
 private:
 	void setRectInMask();
 	void setLblsInMask(int flags, Point p, bool isPr);
@@ -78,13 +79,17 @@ private:
 void GCApplication::reset()
 {
 	if (!mask.empty())
-		mask.setTo(Scalar::all(GC_BGD));
+		mask.setTo(Scalar::all(GC_PR_FGD));
 	if (!res.empty())
 		image->copyTo(res);
 	isInitialized = false;
 	rectState = NOT_SET;
 	lblsState = NOT_SET;
 	prLblsState = NOT_SET;	
+}
+
+void GCApplication::notSetRect() {
+	rectState = SET;
 }
 
 void GCApplication::setImageAndWinName(const Mat& _image, const string& _winName)
@@ -276,12 +281,13 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/333.avi");
+	string openName = "222";
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/"+openName+".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
 
-	//CAP_PROP_FRAME_COUNT
+	//CAP_PROP_FRAME_COUNTCompatTelRunner
 	for (int times = 0; times < 1; times++)
 	{
 		int key[3] = { 4,13,22};
@@ -291,43 +297,45 @@ int main() {
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		/*for (int i = 0;i < 5;i++) {
-			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/paragliding-launch/" + to_string(i) + ".bmp";
+		for (int i = 0;i < 3;i++) {
+			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/"+openName+"/" + to_string(i) + ".bmp";
 			Mat mask = imread(name, 0);
 			keyMaskArr.push_back(mask);
+			imshow("目标", imgSrcArr[0]);//显示结果
+		}
 
-		}*/
-		for (int i = 0;i < 3;i++) {
-			gcapp.reset();
-			const string winName = "原图像";
-			namedWindow(winName, WINDOW_AUTOSIZE);
-			setMouseCallback(winName, on_mouse, 0);
-			gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
-			gcapp.showImage();
-			printf("第%d帧\n", key[i]);
-			while (1)
-			{
-				int t = waitKey();
-				char c = (char)t;
-				if (c == 'n') {   //键盘输入S实现分割
-					break;
-				}
-				if (c == 'r') {   //键盘输入S实现分割
-					gcapp.reset();
-					gcapp.showImage();
-				}				
-			}
 
-		Mat mask;
-		//medianBlur(gcapp.mask, mask, 3);
-		gcapp.mask.copyTo(mask);
-		keyMaskArr.push_back(mask);
-		string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/paragliding-launch/" + to_string(i) + ".bmp";
-		imwrite(name, mask);
-	}
+	//	for (int i = 0;i < 3;i++) {
+	//		gcapp.reset();
+	//		const string winName = "原图像";
+	//		namedWindow(winName, WINDOW_AUTOSIZE);
+	//		setMouseCallback(winName, on_mouse, 0);
+	//		gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
+	//		gcapp.notSetRect();//取消画框
+	//		gcapp.showImage();
+	//		printf("第%d帧\n", key[i]);
+	//		while (1)
+	//		{
+	//			int t = waitKey();
+	//			char c = (char)t;
+	//			if (c == 'n') {   //键盘输入S实现分割
+	//				break;
+	//			}
+	//			if (c == 'r') {   //键盘输入S实现分割
+	//				gcapp.reset();
+	//				gcapp.showImage();
+	//			}				
+	//		}
+
+	//	Mat mask;
+	//	medianBlur(gcapp.mask, mask, 3);
+	//	gcapp.mask.copyTo(mask);
+	//	keyMaskArr.push_back(mask);
+	//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/"+openName+"/" + to_string(i) + ".bmp";
+	//	imwrite(name, mask);
+	//}
 
 	printf("标记结束\n");
-	imshow("目标", imgSrcArr[0]);//显示结果
 	while (1)
 	{
 		int t = waitKey();
@@ -354,7 +362,7 @@ int main() {
 				medianBlur(mask, maskBlur, 5);
 				imgSrcArr[t].copyTo(lastImg, maskBlur);
 				//	imshow("目标", lastImg);//显示结果
-				//string name = "E:/Projects/OpenCV/DAVIS-data/image/output/第" + to_string(t + 1) + "帧.bmp";
+				//string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/第" + to_string(t + 1) + "帧.bmp";
 				//imwrite(name, lastImg);
 				videowriter << lastImg;
 			}
