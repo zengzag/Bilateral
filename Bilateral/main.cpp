@@ -3,7 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <vector>
 #include <string>
-#include<sstream>
+#include "slic.h"
 #include "Bilateral.h"
 
 
@@ -85,7 +85,7 @@ void GCApplication::reset()
 	isInitialized = false;
 	rectState = NOT_SET;
 	lblsState = NOT_SET;
-	prLblsState = NOT_SET;	
+	prLblsState = NOT_SET;
 }
 
 void GCApplication::notSetRect() {
@@ -108,7 +108,7 @@ void GCApplication::showImage() const
 
 	if (rectState == IN_PROCESS) {
 		image->copyTo(res);
-		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), GREEN, 2);
+		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), GREEN, -1);
 	}
 	imshow(*winName, res);
 }
@@ -116,12 +116,11 @@ void GCApplication::showImage() const
 void GCApplication::setRectInMask()
 {
 	CV_Assert(!mask.empty());
-	mask.setTo(GC_BGD);
 	rect.x = max(0, rect.x);
 	rect.y = max(0, rect.y);
 	rect.width = min(rect.width, image->cols - rect.x);
 	rect.height = min(rect.height, image->rows - rect.y);
-	(mask(rect)).setTo(Scalar(GC_PR_FGD));
+	(mask(rect)).setTo(Scalar(GC_BGD));
 }
 
 void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
@@ -197,7 +196,7 @@ void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 	{
 		bool isb = (flags & BGD_KEY) != 0,
 			isf = (flags & FGD_KEY) != 0;
-		if (rectState == NOT_SET && !isb && !isf)
+		if (rectState != NOT_SET && !isb && !isf)
 		{
 			rectState = IN_PROCESS;
 			rect = Rect(x, y, 1, 1);
@@ -281,112 +280,110 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	string openName = "222";
-	video.open("E:/Projects/OpenCV/DAVIS-data/image/"+openName+".avi");
+	string openName = "333";
+	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
-
 	//CAP_PROP_FRAME_COUNTCompatTelRunner
 	for (int times = 0; times < 1; times++)
 	{
-		int key[3] = { 4,13,22};
+		int key[3] = { 4,13,22 };
 		for (int i = 0;i < 27;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
 		}
 
+		//for (int i = 0;i < 3;i++) {
+		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+		//	Mat mask = imread(name, 0);
+		//	keyMaskArr.push_back(mask);
+		//	imshow("目标", imgSrcArr[0]);//显示结果
+		//}
+
+
 		for (int i = 0;i < 3;i++) {
-			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/"+openName+"/" + to_string(i) + ".bmp";
-			Mat mask = imread(name, 0);
+			gcapp.reset();
+			const string winName = "原图像";
+			namedWindow(winName, WINDOW_AUTOSIZE);
+			setMouseCallback(winName, on_mouse, 0);
+			gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
+			//gcapp.notSetRect();//取消画框
+			gcapp.showImage();
+			printf("第%d帧\n", key[i]);
+			while (1)
+			{
+				int t = waitKey();
+				char c = (char)t;
+				if (c == 'n') {   //键盘输入S实现分割
+					break;
+				}
+				if (c == 'r') {   //键盘输入S实现分割
+					gcapp.reset();
+					gcapp.showImage();
+				}
+			}
+			Mat mask;
+			medianBlur(gcapp.mask, mask, 3);
+			gcapp.mask.copyTo(mask);
 			keyMaskArr.push_back(mask);
-			imshow("目标", imgSrcArr[0]);//显示结果
+			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+			imwrite(name, mask);
 		}
 
-
-	//	for (int i = 0;i < 3;i++) {
-	//		gcapp.reset();
-	//		const string winName = "原图像";
-	//		namedWindow(winName, WINDOW_AUTOSIZE);
-	//		setMouseCallback(winName, on_mouse, 0);
-	//		gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
-	//		gcapp.notSetRect();//取消画框
-	//		gcapp.showImage();
-	//		printf("第%d帧\n", key[i]);
-	//		while (1)
-	//		{
-	//			int t = waitKey();
-	//			char c = (char)t;
-	//			if (c == 'n') {   //键盘输入S实现分割
-	//				break;
-	//			}
-	//			if (c == 'r') {   //键盘输入S实现分割
-	//				gcapp.reset();
-	//				gcapp.showImage();
-	//			}				
-	//		}
-
-	//	Mat mask;
-	//	medianBlur(gcapp.mask, mask, 3);
-	//	gcapp.mask.copyTo(mask);
-	//	keyMaskArr.push_back(mask);
-	//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/"+openName+"/" + to_string(i) + ".bmp";
-	//	imwrite(name, mask);
-	//}
-
-	printf("标记结束\n");
-	while (1)
-	{
-		int t = waitKey();
-		if (t == 27) break; //27就是esc,随时生效
-
-		char c = (char)t;
-		if (c == 's')   //键盘输入S实现分割
+		printf("标记结束\n");
+		while (1)
 		{
-			//imwrite("E:/Projects/OpenCV/DAVIS-data/image/0mask.bmp", gcapp.mask);
+			int t = waitKey();
+			if (t == 27) break; //27就是esc,随时生效
 
-			printf("第%d段开始分割\n", times + 1);
-			double _time = static_cast<double>(getTickCount());
-			Bilateral bilateral(imgSrcArr);
-			bilateral.InitGmms(keyMaskArr, key);//gcapp.mask   tureMask
-			bilateral.run(maskArr);
-			_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
-			printf("总用时为%f\n", _time);//显示时间
-
-			for (int t = 0; t < imgSrcArr.size(); t++)
+			char c = (char)t;
+			if (c == 's')   //键盘输入S实现分割
 			{
-				Mat mask = maskArr[t];
-				Mat maskBlur;
-				Mat lastImg(maskArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
-				medianBlur(mask, maskBlur, 5);
-				imgSrcArr[t].copyTo(lastImg, maskBlur);
-				//	imshow("目标", lastImg);//显示结果
-				//string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/第" + to_string(t + 1) + "帧.bmp";
-				//imwrite(name, lastImg);
-				videowriter << lastImg;
-			}
+				//imwrite("E:/Projects/OpenCV/DAVIS-data/image/0mask.bmp", gcapp.mask);
 
-			//清除容器，释放内存
-			for (int i = imgSrcArr.size() - 1;i >= 0;i--) {
-				imgSrcArr[i].release();
-			}
-			imgSrcArr.clear();
-			for (int i = maskArr.size() - 1;i >= 0;i--) {
-				maskArr[i].release();
-			}
-			maskArr.clear();
-			printf("第%d段分割结束\n", times + 1);
+				printf("第%d段开始分割\n", times + 1);
+				double _time = static_cast<double>(getTickCount());
+				Bilateral bilateral(imgSrcArr);
+				bilateral.InitGmms(keyMaskArr, key);//gcapp.mask   tureMask
+				bilateral.run(maskArr);
+				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
+				printf("总用时为%f\n", _time);//显示时间
 
-			videowriter.release();
-			//break;
+				for (int t = 0; t < imgSrcArr.size(); t++)
+				{
+					Mat mask = maskArr[t];
+					Mat maskBlur;
+					Mat lastImg(maskArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
+					medianBlur(mask, maskBlur, 5);
+					imgSrcArr[t].copyTo(lastImg, maskBlur);
+					//	imshow("目标", lastImg);//显示结果
+					//string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/第" + to_string(t + 1) + "帧.bmp";
+					//imwrite(name, lastImg);
+					videowriter << lastImg;
+				}
+
+				//清除容器，释放内存
+				for (int i = imgSrcArr.size() - 1;i >= 0;i--) {
+					imgSrcArr[i].release();
+				}
+				imgSrcArr.clear();
+				for (int i = maskArr.size() - 1;i >= 0;i--) {
+					maskArr[i].release();
+				}
+				maskArr.clear();
+				printf("第%d段分割结束\n", times + 1);
+
+				videowriter.release();
+				//break;
+			}
 		}
 	}
-}
 
-//videowriter.release();
-video.release();
-imgSrcArr.clear();
-cv::destroyAllWindows();
-return 0;
+	//videowriter.release();
+	video.release();
+	imgSrcArr.clear();
+	cv::destroyAllWindows();
+	return 0;
 }

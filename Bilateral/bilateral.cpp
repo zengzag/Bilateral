@@ -356,8 +356,10 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 									toSink = 0;
 								}
 								else {
-									fromSource = -log(bgdGMM(color))*sqrt(pixCount);
-									toSink = -log(fgdGMM(color))*sqrt(pixCount);
+									double bgd = bgdGMM(color);
+									double fgd = fgdGMM(color);
+									fromSource = -log(bgd / (bgd + fgd))*sqrt(pixCount);
+									toSink = -log(fgd / (bgd + fgd))*sqrt(pixCount);
 								}
 
 								//Ô­·½·¨
@@ -402,7 +404,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 
 											Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 											double colorDst = (diff.dot(diff));
-											if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 32.0) {
+											if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 128.0) {
 												double w = 1.0 * exp(-bata*colorDst) * sqrt(vNewPixCount);
 												graph.addEdges(vtxIdx, vtxIdxNew, w, w);
 												eCount++;
