@@ -5,7 +5,7 @@
 #include <string>
 #include "slic.h"
 #include "Bilateral.h"
-
+#include "BilateralSimple.h"
 
 using namespace std;
 using namespace cv;
@@ -107,10 +107,18 @@ void GCApplication::showImage() const
 {
 
 	if (rectState == IN_PROCESS) {
-		image->copyTo(res);
-		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), GREEN, -1);
+		Mat temp;
+		res.copyTo(temp);
+		rectangle(temp, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), BLUE, -1);
+		imshow(*winName, temp);
 	}
-	imshow(*winName, res);
+	else if (rectState == SET) {
+		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), BLUE, -1);
+		imshow(*winName, res);
+	}
+	else {
+		imshow(*winName, res);
+	}
 }
 
 void GCApplication::setRectInMask()
@@ -196,12 +204,12 @@ void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 	{
 		bool isb = (flags & BGD_KEY) != 0,
 			isf = (flags & FGD_KEY) != 0;
-		if (rectState != NOT_SET && !isb && !isf)
+		if (rectState != IN_PROCESS && !isb && !isf)
 		{
 			rectState = IN_PROCESS;
 			rect = Rect(x, y, 1, 1);
 		}
-		if ((isb || isf) && rectState == SET)
+		if ((isb || isf) )
 			lblsState = IN_PROCESS;
 	}
 	break;
@@ -302,13 +310,35 @@ int main() {
 		//	imshow("目标", imgSrcArr[0]);//显示结果
 		//}
 
-
+		std::vector<Mat> imgInteArr;
+		Mat inteMask, gcappImg;
+		bool isInitInte = false;
 		for (int i = 0;i < 3;i++) {
-			gcapp.reset();
 			const string winName = "原图像";
-			namedWindow(winName, WINDOW_AUTOSIZE);
+			if (isInitInte) {
+				gcapp.reset();
+				namedWindow(winName, WINDOW_AUTOSIZE);
+				imgSrcArr[key[i]].copyTo(gcappImg);
+				gcapp.setImageAndWinName(gcappImg, winName);
+
+				Mat img1,img2;
+				imgSrcArr[key[i]].copyTo(img1);
+				imgSrcArr[key[i-1]].copyTo(img2);
+				imgInteArr.push_back(img1);
+				imgInteArr.push_back(img2);
+				BilateralSimple bil(imgInteArr);
+				bil.InitGmms(inteMask);
+				bil.run(gcapp.mask);
+
+			}
+			else {
+				gcapp.reset();
+				namedWindow(winName, WINDOW_AUTOSIZE);
+				imgSrcArr[key[i]].copyTo(gcappImg);
+				gcapp.setImageAndWinName(gcappImg, winName);
+			}
+
 			setMouseCallback(winName, on_mouse, 0);
-			gcapp.setImageAndWinName(imgSrcArr[key[i]], winName);
 			//gcapp.notSetRect();//取消画框
 			gcapp.showImage();
 			printf("第%d帧\n", key[i]);
@@ -317,6 +347,7 @@ int main() {
 				int t = waitKey();
 				char c = (char)t;
 				if (c == 'n') {   //键盘输入S实现分割
+					isInitInte = true;
 					break;
 				}
 				if (c == 'r') {   //键盘输入S实现分割
@@ -325,9 +356,10 @@ int main() {
 				}
 			}
 			Mat mask;
-			medianBlur(gcapp.mask, mask, 3);
+			medianBlur(gcapp.mask, mask, 5);
 			gcapp.mask.copyTo(mask);
 			keyMaskArr.push_back(mask);
+			gcapp.mask.copyTo(inteMask);
 			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
 			imwrite(name, mask);
 		}

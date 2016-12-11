@@ -159,12 +159,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Bilateral.cpp" />
+    <ClCompile Include="BilateralSimple.cpp" />
     <ClCompile Include="GMM.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="slic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bilateral.h" />
+    <ClInclude Include="BilateralSimple.h" />
     <ClInclude Include="gcgraph.hpp" />
     <ClInclude Include="GMM.h" />
     <ClInclude Include="slic.h" />
