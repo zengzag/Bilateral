@@ -1079,6 +1079,16 @@ int* SLIC::GetLabel()
 	return label;
 }
 
+void SLIC::GetLabelInMat(Mat &mask)
+{
+	mask.create(m_height, m_width, CV_32SC1);
+	for (int x = 0;x < m_height;x++) {
+		for (int y = 0;y < m_width;y++) {
+			mask.at<int>(x, y) = label[x*m_width + y];
+		}
+	}
+}
+
 cv::Mat SLIC::GetImgWithContours(cv::Scalar color)
 {
 	if (type == GRAY) {

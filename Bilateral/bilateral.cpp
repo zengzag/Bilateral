@@ -135,6 +135,14 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
 					}
 				}
+				else if (maskArr[t].at<uchar>(x, y) == GC_PR_FGD/*GC_FGD*/) {
+					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 1;
+				}
+				else if (maskArr[t].at<uchar>(x, y) == GC_PR_BGD/*GC_FGD*/) {
+					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;
+				}
 			}
 		}
 	}
@@ -390,7 +398,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
-								for (int xN = 0; xN < x ; xN++) {
+								/*for (int xN = 0; xN < x ; xN++) {
 									for (int yN = 0; yN < gridSize[2]; yN++) {
 										int pointN[6] = { t,xN,yN,r,g,b };
 										int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
@@ -410,7 +418,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 
 									}
-								}
+								}*/
 						
 
 							}

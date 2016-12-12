@@ -55,7 +55,7 @@ void BilateralSimple::initGrid() {
 	printf("构建grid用时%f\n", _time);//显示时间
 }
 
-void BilateralSimple::InitGmms(Mat& maskArr)
+void BilateralSimple::InitGmms(Mat& mask)
 {
 	double _time = static_cast<double>(getTickCount());//计时
 
@@ -68,9 +68,9 @@ void BilateralSimple::InitGmms(Mat& maskArr)
 		{
 			for (int y = 0; y < ySize; y++)
 			{
-				if (maskArr.at<uchar>(x, y) == GC_BGD) {
+				if (mask.at<uchar>(x, y) == GC_BGD) {
 					getGridPoint(0, Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[bgdSum] += 3;
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 5;
 					if (point[0] > 0) {
 						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
@@ -120,9 +120,9 @@ void BilateralSimple::InitGmms(Mat& maskArr)
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
 					}
 				}
-				else if (maskArr.at<uchar>(x, y) == GC_FGD/*GC_FGD*/) {
+				else if (mask.at<uchar>(x, y) == GC_FGD/*GC_FGD*/) {
 					getGridPoint(0, Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[fgdSum] += 3;
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 5;
 					if (point[0] > 0) {
 						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
@@ -171,6 +171,14 @@ void BilateralSimple::InitGmms(Mat& maskArr)
 						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] + 1 };
 						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
 					}
+				}
+				else if (mask.at<uchar>(x, y) == GC_PR_FGD/*GC_FGD*/) {
+					getGridPoint(0, Point(x, y), point, tSize, xSize, ySize);
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 1;
+				}
+				else if (mask.at<uchar>(x, y) == GC_PR_BGD/*GC_FGD*/) {
+					getGridPoint(0, Point(x, y), point, tSize, xSize, ySize);
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;
 				}
 			}
 		}
@@ -327,11 +335,11 @@ void BilateralSimple::constructGCGraph(GCGraph<double>& graph) {
 								double toSinkSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
-								if (fromSourceSum > 20 && toSinkSum == 0) {
+								if (fromSourceSum > 30 && toSinkSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else if (fromSourceSum == 0 && toSinkSum > 20) {
+								else if (fromSourceSum == 0 && toSinkSum > 30) {
 									fromSource = 9999;
 									toSink = 0;
 								}
@@ -351,25 +359,64 @@ void BilateralSimple::constructGCGraph(GCGraph<double>& graph) {
 
 
 								//平滑项
-								for (int tN = t; tN > t - 2 && tN >= 0 && tN < gridSize[0]; tN--) {
-									for (int xN = x; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
-										for (int yN = y; yN > y - 2 && yN >= 0 && yN < gridSize[2]; yN--) {
-											for (int rN = r; rN > r - 2 && rN >= 0 && rN < gridSize[3]; rN--) {
-												for (int gN = g; gN > g - 2 && gN >= 0 && gN < gridSize[4]; gN--) {
-													for (int bN = b; bN > b - 2 && bN >= 0 && bN < gridSize[5]; bN--) {
-														int pointN[6] = { tN,xN,yN,rN,gN,bN };
-														int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
-														if (grid.at<Vec< int, 4 > >(pointN)[pixSum]>0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
-															double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
-															Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-															double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-															double w = 1.0 * e * sqrt(num);
-															graph.addEdges(vtxIdx, vtxIdxNew, w, w);
-														}
-													}
-												}
-											}
-										}
+								if (t > 0) {
+									int pointN[6] = { t - 1,x,y,r,g,b };
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
+										Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+										double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
+										double w = 1.0 * e * sqrt(num);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
+									}
+								}
+								if (x > 0) {
+									int pointN[6] = { t,x - 1,y,r,g,b };
+									if (grid.at<Vec< int, 4 >>(pointN)[pixSum] > 0) {
+										double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
+										Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+										double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
+										double w = 1.0 * e * sqrt(num);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
+									}
+								}
+								if (y > 0) {
+									int pointN[6] = { t,x,y - 1,r,g,b };
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
+										Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+										double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
+										double w = 1.0 * e * sqrt(num);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
+									}
+								}
+								if (r > 0) {
+									int pointN[6] = { t,x,y,r - 1,g,b };
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
+										Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+										double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
+										double w = 1.0 * e * sqrt(num);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
+									}
+								}
+								if (g > 0) {
+									int pointN[6] = { t,x,y,r,g - 1,b };
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
+										Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+										double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
+										double w = 1.0 * e * sqrt(num);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
+									}
+								}
+								if (b > 0) {
+									int pointN[6] = { t,x,y,r,g,b - 1 };
+									if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0) {
+										double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
+										Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+										double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
+										double w = 1.0 * e * sqrt(num);
+										graph.addEdges(vtxIdx, grid.at<Vec< int, 4 > >(pointN)[vIdx], w, w);
 									}
 								}
 							}
@@ -432,9 +479,9 @@ void BilateralSimple::estimateSegmentation(GCGraph<double>& graph, Mat& mask) {
 				getGridPoint(1, p, point, 2, xSize, ySize);
 				int vertex = grid.at<Vec< int, 4 > >(point)[vIdx];
 				if (graph.inSourceSegment(vertex))
-					mask.at<uchar>(p.x, p.y) = GC_FGD;
+					mask.at<uchar>(p.x, p.y) = GC_PR_FGD;
 				else
-					mask.at<uchar>(p.x, p.y) = GC_BGD;
+					mask.at<uchar>(p.x, p.y) = GC_PR_BGD;
 			}
 		}
 

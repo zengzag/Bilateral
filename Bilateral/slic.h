@@ -65,6 +65,11 @@ public:
 	int* GetLabel();
 
 	//===========================================================================
+	///	Get label on each pixel which shows the number of superpixel it belongs to
+	//===========================================================================
+	void GetLabelInMat(cv::Mat &mask);
+
+	//===========================================================================
 	///	Get the result image with contours on the given color
 	//===========================================================================
 	cv::Mat GetImgWithContours(cv::Scalar color);

@@ -22,6 +22,10 @@ const Scalar GREEN = Scalar(0, 255, 0);
 
 const int BGD_KEY = EVENT_FLAG_CTRLKEY;
 const int FGD_KEY = EVENT_FLAG_SHIFTKEY;
+enum GrabCut {
+	GC_INIT = 10
+};
+
 
 static void help()
 {
@@ -79,7 +83,7 @@ private:
 void GCApplication::reset()
 {
 	if (!mask.empty())
-		mask.setTo(Scalar::all(GC_PR_FGD));
+		mask.setTo(Scalar::all(GC_INIT));
 	if (!res.empty())
 		image->copyTo(res);
 	isInitialized = false;
@@ -164,21 +168,22 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 void GCApplication::reLblsInMask(Point pCurrent, Point pCenter, bool isFGD)
 {
 	uchar value = isFGD ? GC_FGD : GC_BGD;
+	uchar canDoLbl = isFGD ? GC_PR_BGD : GC_PR_FGD;
 	Scalar pxls = isFGD ? RED : BLUE;
 
-	if (mask.at<uchar>(pCurrent) == GC_PR_FGD) {
+	if (mask.at<uchar>(pCurrent) == GC_INIT || mask.at<uchar>(pCurrent) == canDoLbl) {
 		circle(res, pCurrent, 1, pxls, thickness);
 		circle(mask, pCurrent, 1, value, thickness);
 		Point p;
 		for (p.x = pCurrent.x - 1; p.x < pCurrent.x + 2;p.x++) {
 			for (p.y = pCurrent.y - 1; p.y < pCurrent.y + 2;p.y++) {
-				if (p.x >= 0 && p.y >= 0 && p.x < video.get(CV_CAP_PROP_FRAME_WIDTH) - 1 && p.y < video.get(CV_CAP_PROP_FRAME_HEIGHT) - 1) {
+				if (p.x >= 0 && p.y >= 0 && p.x < image->cols - 1 && p.y < image->rows - 1) {
 					Vec3b color1 = image->at<Vec3b>(p);
 					Vec3b color2 = image->at<Vec3b>(pCurrent);
 					Vec3b color3 = image->at<Vec3b>(pCenter);
 					bool p_pCurrent = abs(color1[0] - color2[0]) <= 8 && abs(color1[1] - color2[1]) <= 8 && abs(color1[2] - color2[2]) <= 8;
 					bool p_pCenter = abs(color1[0] - color3[0]) <= 16 && abs(color1[1] - color3[1]) <= 16 && abs(color1[2] - color3[2]) <= 16;
-					if (p_pCurrent && p_pCenter&&mask.at<uchar>(p) == GC_PR_FGD) {
+					if (p_pCurrent && p_pCenter && (mask.at<uchar>(p) ==GC_INIT|| mask.at<uchar>(p) == canDoLbl)) {
 						reLblsInMask(p, pCenter, isFGD);
 					}
 				}
@@ -191,8 +196,8 @@ void GCApplication::reLblsInMask(Point pCurrent, Point pCenter, bool isFGD)
 
 void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 {
-	int xMax = video.get(CV_CAP_PROP_FRAME_WIDTH) - 1;
-	int yMax = video.get(CV_CAP_PROP_FRAME_HEIGHT) - 1;
+	int xMax = image->cols - 1;
+	int yMax = image->rows - 1;
 	x = x >= 0 ? x : 0;
 	x = x <= xMax ? x : xMax;
 	y = y >= 0 ? y : 0;
@@ -288,7 +293,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 
 
 int main() {
-	string openName = "333";
+	string openName = "paragliding-launch";
 	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
@@ -311,7 +316,7 @@ int main() {
 		//}
 
 		std::vector<Mat> imgInteArr;
-		Mat inteMask, gcappImg;
+		Mat inteMask, gcappImg,maskTemp;
 		bool isInitInte = false;
 		for (int i = 0;i < 3;i++) {
 			const string winName = "原图像";
@@ -322,13 +327,24 @@ int main() {
 				gcapp.setImageAndWinName(gcappImg, winName);
 
 				Mat img1,img2;
-				imgSrcArr[key[i]].copyTo(img1);
-				imgSrcArr[key[i-1]].copyTo(img2);
+				imgSrcArr[key[i-1]].copyTo(img1);
+				imgSrcArr[key[i]].copyTo(img2);
 				imgInteArr.push_back(img1);
 				imgInteArr.push_back(img2);
 				BilateralSimple bil(imgInteArr);
 				bil.InitGmms(inteMask);
-				bil.run(gcapp.mask);
+				bil.run(inteMask);
+				inteMask.copyTo(maskTemp);
+
+				inteMask = inteMask & 1;
+				Mat img3(img1.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+				img2.copyTo(img3, inteMask);
+
+				addWeighted(img2, 0.3, img3, 0.7,0, gcappImg);
+				gcapp.reset();
+				maskTemp.copyTo(gcapp.mask);
+
+				imgInteArr.clear();
 
 			}
 			else {
@@ -352,6 +368,9 @@ int main() {
 				}
 				if (c == 'r') {   //键盘输入S实现分割
 					gcapp.reset();
+					if (isInitInte) {
+						maskTemp.copyTo(gcapp.mask);
+					}
 					gcapp.showImage();
 				}
 			}
