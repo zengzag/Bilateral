@@ -290,10 +290,120 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 	gcapp.mouseClick(event, x, y, flags, param);
 }
 
+void blurBySlic(Mat &imgSrc,Mat &mask) {
+	Mat lableMat;
+	SLIC slic;
+	int numSuperpixels = slic.GenerateSuperpixels(imgSrc, 1000);
+	slic.GetLabelInMat(lableMat);
+	double *fLabel = new double[numSuperpixels];
+	double *bLabel = new double[numSuperpixels];
+	for (int i = 0;i < numSuperpixels;i++) {
+		fLabel[i] = 0;bLabel[i] = 0;
+	}
+	for (int x = 0;x < mask.rows;x++) {
+		for (int y = 0;y < mask.cols;y++) {
+			if (mask.at<uchar>(x, y) == 1) {
+				fLabel[lableMat.at<int>(x, y)]++;
+			}
+			else {
+				bLabel[lableMat.at<int>(x, y)]++;
+			}
+		}
+	}
+	for (int i = 0;i < numSuperpixels;i++) {
+		double sum = fLabel[i] + bLabel[i];
+		fLabel[i] = fLabel[i] / sum;
+		bLabel[i] = bLabel[i] / sum;
+	}
+
+	for (int x = 0;x < mask.rows;x++) {
+		for (int y = 0;y < mask.cols;y++) {
+			if (fLabel[lableMat.at<int>(x, y)]>0.9) {
+				mask.at<uchar>(x, y) = 1;
+			}else if (bLabel[lableMat.at<int>(x, y)]>0.9) {
+				mask.at<uchar>(x, y) = 0;
+			}
+		}
+	}
+
+	delete[] fLabel;
+	delete[] bLabel;
+}
+
+static void interact(string openName, int* key,int num)
+{
+	std::vector<Mat> imgInteArr;
+	Mat inteMask, gcappImg,maskTemp;
+	bool isInitInte = false;
+	for (int i = 0;i < num;i++) {
+		const string winName = "原图像";
+		if (isInitInte) {
+			gcapp.reset();
+			namedWindow(winName, WINDOW_AUTOSIZE);
+			imgSrcArr[key[i]].copyTo(gcappImg);
+			gcapp.setImageAndWinName(gcappImg, winName);
+
+			Mat img1,img2;
+			imgSrcArr[key[i-1]].copyTo(img1);
+			imgSrcArr[key[i]].copyTo(img2);
+			imgInteArr.push_back(img1);
+			imgInteArr.push_back(img2);
+			BilateralSimple bil(imgInteArr);
+			bil.InitGmms(inteMask);
+			bil.run(inteMask);
+			inteMask.copyTo(maskTemp);
+
+			inteMask = inteMask & 1;
+			Mat img3(img1.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+			img2.copyTo(img3, inteMask);
+
+			addWeighted(img2, 0.3, img3, 0.7,0, gcappImg);
+			gcapp.reset();
+			maskTemp.copyTo(gcapp.mask);
+
+			imgInteArr.clear();
+
+		}
+		else {
+			gcapp.reset();
+			namedWindow(winName, WINDOW_AUTOSIZE);
+			imgSrcArr[key[i]].copyTo(gcappImg);
+			gcapp.setImageAndWinName(gcappImg, winName);
+		}
+
+		setMouseCallback(winName, on_mouse, 0);
+		//gcapp.notSetRect();//取消画框
+		gcapp.showImage();
+		printf("第%d帧\n", key[i]);
+		while (1)
+		{
+			int t = waitKey();
+			char c = (char)t;
+			if (c == 'n') {   //键盘输入S实现分割
+				isInitInte = true;
+				break;
+			}
+			if (c == 'r') {   //键盘输入S实现分割
+				gcapp.reset();
+				if (isInitInte) {
+					maskTemp.copyTo(gcapp.mask);
+				}
+				gcapp.showImage();
+			}
+		}
+		Mat mask;
+		medianBlur(gcapp.mask, mask, 5);
+		gcapp.mask.copyTo(mask);
+		keyMaskArr.push_back(mask);
+		gcapp.mask.copyTo(inteMask);
+		string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+		imwrite(name, mask);
+	}
+}
 
 
 int main() {
-	string openName = "paragliding-launch";
+	string openName = "333";
 	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 
@@ -308,80 +418,14 @@ int main() {
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		//for (int i = 0;i < 3;i++) {
-		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
-		//	Mat mask = imread(name, 0);
-		//	keyMaskArr.push_back(mask);
-		//	imshow("目标", imgSrcArr[0]);//显示结果
-		//}
-
-		std::vector<Mat> imgInteArr;
-		Mat inteMask, gcappImg,maskTemp;
-		bool isInitInte = false;
 		for (int i = 0;i < 3;i++) {
-			const string winName = "原图像";
-			if (isInitInte) {
-				gcapp.reset();
-				namedWindow(winName, WINDOW_AUTOSIZE);
-				imgSrcArr[key[i]].copyTo(gcappImg);
-				gcapp.setImageAndWinName(gcappImg, winName);
-
-				Mat img1,img2;
-				imgSrcArr[key[i-1]].copyTo(img1);
-				imgSrcArr[key[i]].copyTo(img2);
-				imgInteArr.push_back(img1);
-				imgInteArr.push_back(img2);
-				BilateralSimple bil(imgInteArr);
-				bil.InitGmms(inteMask);
-				bil.run(inteMask);
-				inteMask.copyTo(maskTemp);
-
-				inteMask = inteMask & 1;
-				Mat img3(img1.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-				img2.copyTo(img3, inteMask);
-
-				addWeighted(img2, 0.3, img3, 0.7,0, gcappImg);
-				gcapp.reset();
-				maskTemp.copyTo(gcapp.mask);
-
-				imgInteArr.clear();
-
-			}
-			else {
-				gcapp.reset();
-				namedWindow(winName, WINDOW_AUTOSIZE);
-				imgSrcArr[key[i]].copyTo(gcappImg);
-				gcapp.setImageAndWinName(gcappImg, winName);
-			}
-
-			setMouseCallback(winName, on_mouse, 0);
-			//gcapp.notSetRect();//取消画框
-			gcapp.showImage();
-			printf("第%d帧\n", key[i]);
-			while (1)
-			{
-				int t = waitKey();
-				char c = (char)t;
-				if (c == 'n') {   //键盘输入S实现分割
-					isInitInte = true;
-					break;
-				}
-				if (c == 'r') {   //键盘输入S实现分割
-					gcapp.reset();
-					if (isInitInte) {
-						maskTemp.copyTo(gcapp.mask);
-					}
-					gcapp.showImage();
-				}
-			}
-			Mat mask;
-			medianBlur(gcapp.mask, mask, 5);
-			gcapp.mask.copyTo(mask);
-			keyMaskArr.push_back(mask);
-			gcapp.mask.copyTo(inteMask);
 			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
-			imwrite(name, mask);
+			Mat mask = imread(name, 0);
+			keyMaskArr.push_back(mask);
+			imshow("目标", imgSrcArr[0]);//显示结果
 		}
+
+		//interact(openName, key,3);
 
 		printf("标记结束\n");
 		while (1)
@@ -400,13 +444,20 @@ int main() {
 				bilateral.InitGmms(keyMaskArr, key);//gcapp.mask   tureMask
 				bilateral.run(maskArr);
 				_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
-				printf("总用时为%f\n", _time);//显示时间
+				printf("分割用时为%f\n", _time);//显示时间
+				double _time1 = static_cast<double>(getTickCount());
+
+#pragma omp parallel for
+				for (int t = 0; t < imgSrcArr.size(); t++)
+				{
+					blurBySlic(imgSrcArr[t], maskArr[t]);
+				}
 
 				for (int t = 0; t < imgSrcArr.size(); t++)
 				{
-					Mat mask = maskArr[t];
-					Mat maskBlur;
+					Mat mask = maskArr[t];					
 					Mat lastImg(maskArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
+					Mat maskBlur;
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
 					//	imshow("目标", lastImg);//显示结果
@@ -414,6 +465,8 @@ int main() {
 					//imwrite(name, lastImg);
 					videowriter << lastImg;
 				}
+				_time1 = (static_cast<double>(getTickCount()) - _time1) / getTickFrequency();
+				printf("超像素用时为%f\n", _time1);//显示时间
 
 				//清除容器，释放内存
 				for (int i = imgSrcArr.size() - 1;i >= 0;i--) {
@@ -425,7 +478,7 @@ int main() {
 				}
 				maskArr.clear();
 				printf("第%d段分割结束\n", times + 1);
-
+				
 				videowriter.release();
 				//break;
 			}

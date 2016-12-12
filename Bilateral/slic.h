@@ -55,7 +55,7 @@ public:
 	///	Perform SLIC algorithm on the given image 
 	/// with the given number of superpixels
 	//===========================================================================
-	void GenerateSuperpixels(
+	int GenerateSuperpixels(
 		cv::Mat& img, 
 		UINT numSuperpixels);
 

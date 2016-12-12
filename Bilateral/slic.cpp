@@ -1047,7 +1047,7 @@ void SLIC::PerformSLICO_ForGivenK(
 	if(nlabels) delete [] nlabels;
 }
 
-void SLIC::GenerateSuperpixels(cv::Mat& img, UINT numSuperpixels)
+int SLIC::GenerateSuperpixels(cv::Mat& img, UINT numSuperpixels)
 {
 	if (img.empty()) {
 		exit(-1);
@@ -1071,6 +1071,7 @@ void SLIC::GenerateSuperpixels(cv::Mat& img, UINT numSuperpixels)
 		Mat2Buffer(img, bufferRGB);
 		PerformSLICO_ForGivenK(bufferRGB, img.cols, img.rows, label, sz, numSuperpixels, 10);
 	}
+	return sz;
 }
 
 // 
