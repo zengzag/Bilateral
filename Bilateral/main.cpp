@@ -165,34 +165,41 @@ void GCApplication::setLblsInMask(int flags, Point p, bool isPr)
 	}
 }
 
-void GCApplication::reLblsInMask(Point pCurrent, Point pCenter, bool isFGD)
+void GCApplication::reLblsInMask(Point pC, Point pCenter, bool isFGD)
 {
 	uchar value = isFGD ? GC_FGD : GC_BGD;
 	uchar canDoLbl = isFGD ? GC_PR_BGD : GC_PR_FGD;
 	Scalar pxls = isFGD ? RED : BLUE;
 
-	if (mask.at<uchar>(pCurrent) == GC_INIT || mask.at<uchar>(pCurrent) == canDoLbl) {
-		circle(res, pCurrent, 1, pxls, thickness);
-		circle(mask, pCurrent, 1, value, thickness);
-		Point p;
-		for (p.x = pCurrent.x - 1; p.x < pCurrent.x + 2;p.x++) {
-			for (p.y = pCurrent.y - 1; p.y < pCurrent.y + 2;p.y++) {
-				if (p.x >= 0 && p.y >= 0 && p.x < image->cols - 1 && p.y < image->rows - 1) {
-					Vec3b color1 = image->at<Vec3b>(p);
-					Vec3b color2 = image->at<Vec3b>(pCurrent);
-					Vec3b color3 = image->at<Vec3b>(pCenter);
-					bool p_pCurrent = abs(color1[0] - color2[0]) <= 8 && abs(color1[1] - color2[1]) <= 8 && abs(color1[2] - color2[2]) <= 8;
-					bool p_pCenter = abs(color1[0] - color3[0]) <= 16 && abs(color1[1] - color3[1]) <= 16 && abs(color1[2] - color3[2]) <= 16;
-					if (p_pCurrent && p_pCenter && (mask.at<uchar>(p) ==GC_INIT|| mask.at<uchar>(p) == canDoLbl)) {
-						reLblsInMask(p, pCenter, isFGD);
+	vector<Point> pointList;
+	pointList.push_back(pC);
+
+	while (!pointList.empty())
+	{
+		Point pCurrent = pointList.back();
+		pointList.pop_back();
+		if (mask.at<uchar>(pCurrent) == GC_INIT || mask.at<uchar>(pCurrent) == canDoLbl) {
+			circle(res, pCurrent, 1, pxls, thickness);
+			circle(mask, pCurrent, 1, value, thickness);
+			Point p;
+			for (p.x = pCurrent.x - 1; p.x < pCurrent.x + 2;p.x++) {
+				for (p.y = pCurrent.y - 1; p.y < pCurrent.y + 2;p.y++) {
+					if (p.x >= 0 && p.y >= 0 && p.x < image->cols - 1 && p.y < image->rows - 1) {
+						Vec3b color1 = image->at<Vec3b>(p);
+						Vec3b color2 = image->at<Vec3b>(pCurrent);
+						Vec3b color3 = image->at<Vec3b>(pCenter);
+						bool p_pCurrent = abs(color1[0] - color2[0]) <= 8 && abs(color1[1] - color2[1]) <= 8 && abs(color1[2] - color2[2]) <= 8;
+						bool p_pCenter = abs(color1[0] - color3[0]) <= 16 && abs(color1[1] - color3[1]) <= 16 && abs(color1[2] - color3[2]) <= 16;
+						if (p_pCurrent && p_pCenter && (mask.at<uchar>(p) == GC_INIT || mask.at<uchar>(p) == canDoLbl)) {
+							Point ptemp = p;
+							pointList.push_back(ptemp);
+						}
 					}
 				}
 			}
 		}
 	}
 }
-
-
 
 void GCApplication::mouseClick(int event, int x, int y, int flags, void*)
 {
@@ -318,11 +325,11 @@ void blurBySlic(Mat &imgSrc,Mat &mask) {
 
 	for (int x = 0;x < mask.rows;x++) {
 		for (int y = 0;y < mask.cols;y++) {
-			if (fLabel[lableMat.at<int>(x, y)]>0.9) {
-				mask.at<uchar>(x, y) = 1;
-			}else if (bLabel[lableMat.at<int>(x, y)]>0.9) {
+			if (bLabel[lableMat.at<int>(x, y)]>0.8) {
 				mask.at<uchar>(x, y) = 0;
-			}
+			}/*else if (fLabel[lableMat.at<int>(x, y)]>0.9) {
+				mask.at<uchar>(x, y) = 1;
+			}*/
 		}
 	}
 
@@ -352,12 +359,14 @@ static void interact(string openName, int* key,int num)
 			bil.InitGmms(inteMask);
 			bil.run(inteMask);
 			inteMask.copyTo(maskTemp);
-
+			medianBlur(maskTemp, inteMask, 3);
+			inteMask.copyTo(maskTemp);
 			inteMask = inteMask & 1;
+
 			Mat img3(img1.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 			img2.copyTo(img3, inteMask);
 
-			addWeighted(img2, 0.3, img3, 0.7,0, gcappImg);
+			addWeighted(img2, 0.4, img3, 0.6,0, gcappImg);
 			gcapp.reset();
 			maskTemp.copyTo(gcapp.mask);
 
@@ -372,7 +381,6 @@ static void interact(string openName, int* key,int num)
 		}
 
 		setMouseCallback(winName, on_mouse, 0);
-		//gcapp.notSetRect();//取消画框
 		gcapp.showImage();
 		printf("第%d帧\n", key[i]);
 		while (1)
@@ -406,26 +414,25 @@ int main() {
 	string openName = "333";
 	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
-
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
 	//CAP_PROP_FRAME_COUNTCompatTelRunner
 	for (int times = 0; times < 1; times++)
 	{
-		int key[3] = { 4,13,22 };
-		for (int i = 0;i < 27;i++) {
+		int key[5] = { 3,13,23,33,43 };
+		for (int i = 0;i < 50;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		for (int i = 0;i < 3;i++) {
-			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
-			Mat mask = imread(name, 0);
-			keyMaskArr.push_back(mask);
-			imshow("目标", imgSrcArr[0]);//显示结果
-		}
+		//for (int i = 0;i < 3;i++) {
+		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+		//	Mat mask = imread(name, 0);
+		//	keyMaskArr.push_back(mask);
+		//	imshow("目标", imgSrcArr[0]);//显示结果
+		//}
 
-		//interact(openName, key,3);
+		interact(openName, key,5);
 
 		printf("标记结束\n");
 		while (1)
@@ -447,7 +454,7 @@ int main() {
 				printf("分割用时为%f\n", _time);//显示时间
 				double _time1 = static_cast<double>(getTickCount());
 
-#pragma omp parallel for
+				#pragma omp parallel for
 				for (int t = 0; t < imgSrcArr.size(); t++)
 				{
 					blurBySlic(imgSrcArr[t], maskArr[t]);
@@ -463,6 +470,10 @@ int main() {
 					//	imshow("目标", lastImg);//显示结果
 					//string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/第" + to_string(t + 1) + "帧.bmp";
 					//imwrite(name, lastImg);
+					Mat img3(imgSrcArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
+					imgSrcArr[t].copyTo(img3, maskBlur);
+					addWeighted(imgSrcArr[t], 0.3, img3, 0.7, 0, lastImg);
+
 					videowriter << lastImg;
 				}
 				_time1 = (static_cast<double>(getTickCount()) - _time1) / getTickFrequency();

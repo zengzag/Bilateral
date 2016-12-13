@@ -195,19 +195,19 @@ void BilateralSimple::InitGmms(Mat& mask)
 					for (int g = 0; g < gridSize[4]; g++) {
 						for (int b = 0; b < gridSize[5]; b++) {
 							int point[6] = { t,x,y,r,g,b };
-							int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
-							int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
-							if (bgdcount > 0) {
-								Vec3f color = gridColor.at<Vec3f>(point);
-								bgdSamples.push_back(color);																
+							if (grid.at<Vec< int, 4 > >(point)[pixSum] > 0) {
+								int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
+								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
+								if (bgdcount > 0) {
+									Vec3f color = gridColor.at<Vec3f>(point);
+									bgdSamples.push_back(color);
 									bgdWeight.push_back(bgdcount);
-								
-							}
-							if (fgdcount > 0) {
-								Vec3f color = gridColor.at<Vec3f>(point);
-								fgdSamples.push_back(color);															
+								}
+								if (fgdcount > 0) {
+									Vec3f color = gridColor.at<Vec3f>(point);
+									fgdSamples.push_back(color);
 									fgdWeight.push_back(fgdcount);
-								
+								}
 							}
 						}
 					}
@@ -310,7 +310,8 @@ static double calcBeta(const Mat& img)
 void BilateralSimple::constructGCGraph(GCGraph<double>& graph) {
 	double _time = static_cast<double>(getTickCount());
 
-	double bata = calcBeta(imgSrcArr[0]);
+	//double bata = calcBeta(imgSrcArr[0]);
+	double bata = 0.01;
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
 	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
@@ -335,11 +336,11 @@ void BilateralSimple::constructGCGraph(GCGraph<double>& graph) {
 								double toSinkSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
-								if (fromSourceSum > 30 && toSinkSum == 0) {
+								if ((fromSourceSum > 3 * pixCount || fromSourceSum > 30) && toSinkSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else if (fromSourceSum == 0 && toSinkSum > 30) {
+								else if (fromSourceSum == 0 && (toSinkSum > 3 * pixCount || toSinkSum > 30)) {
 									fromSource = 9999;
 									toSink = 0;
 								}

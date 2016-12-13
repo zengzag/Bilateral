@@ -33,7 +33,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 				uchar a = maskArr[t].at<uchar>(x, y);
 				if (maskArr[t].at<uchar>(x, y) == GC_BGD) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[bgdSum] += 3;
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 5;
 					if (point[0] > 0) {
 						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
@@ -85,7 +85,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 				}
 				else if (maskArr[t].at<uchar>(x, y) == GC_FGD/*GC_FGD*/) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[fgdSum] += 3;
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 5;
 					if (point[0] > 0) {
 						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
 						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
@@ -159,24 +159,26 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 					for (int g = 0; g < gridSize[4]; g++) {
 						for (int b = 0; b < gridSize[5]; b++) {
 							int point[6] = { t,x,y,r,g,b };
-							int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
-							int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
-							if (bgdcount > 0) {
-								Vec3f color = gridColor.at<Vec3f>(point);
-								bgdSamples.push_back(color);
-								for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
-									double weight = bgdcount*exp(-2 * (t / 3 - tGmm)*(t / 3 - tGmm));
-									//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
-									bgdWeight[tGmm].push_back(weight);
+							if (grid.at<Vec< int, 4 > >(point)[pixSum] > 0) {
+								int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
+								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
+								if (bgdcount > 0) {
+									Vec3f color = gridColor.at<Vec3f>(point);
+									bgdSamples.push_back(color);
+									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
+										double weight = bgdcount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm));
+										//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
+										bgdWeight[tGmm].push_back(weight);
+									}
 								}
-							}
-							if (fgdcount > 0) {
-								Vec3f color = gridColor.at<Vec3f>(point);
-								fgdSamples.push_back(color);
-								for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
-									double weight = fgdcount*exp(-2 * (t/3 - tGmm)*(t/3 - tGmm));
-									//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
-									fgdWeight[tGmm].push_back(weight);
+								if (fgdcount > 0) {
+									Vec3f color = gridColor.at<Vec3f>(point);
+									fgdSamples.push_back(color);
+									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
+										double weight = fgdcount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm));
+										//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
+										fgdWeight[tGmm].push_back(weight);
+									}
 								}
 							}
 						}
@@ -324,13 +326,14 @@ static double calcBeta(const Mat& img)
 void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	double _time = static_cast<double>(getTickCount());
 
-	double bata = calcBeta(imgSrcArr[0]);
+	//double bata = calcBeta(imgSrcArr[0]);
+	double bata = 0.01;
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
 	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
 	int eCount = 0, eCount2 = 0;
 	for (int t = 0; t < gridSize[0]; t++) {
-		int gmmT = t / 3;
+		int gmmT = t / 2;
 		GMM bgdGMM(bgModelArr[gmmT]), fgdGMM(fgModelArr[gmmT]);
 
 		for (int x = 0; x < gridSize[1]; x++) {
@@ -352,11 +355,11 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								double toSinkSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double fromSourceSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
-								if (fromSourceSum > 20 && toSinkSum == 0) {
+								if ((fromSourceSum > 3*pixCount || fromSourceSum > 30)&& toSinkSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else if (fromSourceSum == 0 && toSinkSum > 20) {
+								else if (fromSourceSum == 0 && (toSinkSum > 3 * pixCount || toSinkSum > 30)) {
 									fromSource = 9999;
 									toSink = 0;
 								}
