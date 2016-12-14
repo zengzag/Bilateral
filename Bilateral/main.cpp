@@ -188,8 +188,10 @@ void GCApplication::reLblsInMask(Point pC, Point pCenter, bool isFGD)
 						Vec3b color1 = image->at<Vec3b>(p);
 						Vec3b color2 = image->at<Vec3b>(pCurrent);
 						Vec3b color3 = image->at<Vec3b>(pCenter);
-						bool p_pCurrent = abs(color1[0] - color2[0]) <= 8 && abs(color1[1] - color2[1]) <= 8 && abs(color1[2] - color2[2]) <= 8;
-						bool p_pCenter = abs(color1[0] - color3[0]) <= 16 && abs(color1[1] - color3[1]) <= 16 && abs(color1[2] - color3[2]) <= 16;
+						Vec3d diff12 = (Vec3d)color1 - (Vec3d)color2;
+						Vec3d diff13 = (Vec3d)color1 - (Vec3d)color3;						
+						bool p_pCurrent = diff12.dot(diff12) <= 128;
+						bool p_pCenter = diff13.dot(diff13) <= 256;
 						if (p_pCurrent && p_pCenter && (mask.at<uchar>(p) == GC_INIT || mask.at<uchar>(p) == canDoLbl)) {
 							Point ptemp = p;
 							pointList.push_back(ptemp);
@@ -300,7 +302,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 void blurBySlic(Mat &imgSrc,Mat &mask) {
 	Mat lableMat;
 	SLIC slic;
-	int numSuperpixels = slic.GenerateSuperpixels(imgSrc, 1000);
+	int numSuperpixels = slic.GenerateSuperpixels(imgSrc, 500);
 	slic.GetLabelInMat(lableMat);
 	double *fLabel = new double[numSuperpixels];
 	double *bLabel = new double[numSuperpixels];
@@ -325,7 +327,7 @@ void blurBySlic(Mat &imgSrc,Mat &mask) {
 
 	for (int x = 0;x < mask.rows;x++) {
 		for (int y = 0;y < mask.cols;y++) {
-			if (bLabel[lableMat.at<int>(x, y)]>0.8) {
+			if (bLabel[lableMat.at<int>(x, y)]>0.9) {
 				mask.at<uchar>(x, y) = 0;
 			}/*else if (fLabel[lableMat.at<int>(x, y)]>0.9) {
 				mask.at<uchar>(x, y) = 1;
@@ -425,14 +427,14 @@ int main() {
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		//for (int i = 0;i < 3;i++) {
-		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
-		//	Mat mask = imread(name, 0);
-		//	keyMaskArr.push_back(mask);
-		//	imshow("目标", imgSrcArr[0]);//显示结果
-		//}
+		for (int i = 0;i < 5;i++) {
+			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+			Mat mask = imread(name, 0);
+			keyMaskArr.push_back(mask);
+			imshow("目标", imgSrcArr[0]);//显示结果
+		}
 
-		interact(openName, key,5);
+		//interact(openName, key,5);
 
 		printf("标记结束\n");
 		while (1)
@@ -454,11 +456,11 @@ int main() {
 				printf("分割用时为%f\n", _time);//显示时间
 				double _time1 = static_cast<double>(getTickCount());
 
-				#pragma omp parallel for
+				/*#pragma omp parallel for
 				for (int t = 0; t < imgSrcArr.size(); t++)
 				{
 					blurBySlic(imgSrcArr[t], maskArr[t]);
-				}
+				}*/
 
 				for (int t = 0; t < imgSrcArr.size(); t++)
 				{
@@ -467,17 +469,18 @@ int main() {
 					Mat maskBlur;
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
-					//	imshow("目标", lastImg);//显示结果
-					//string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/第" + to_string(t + 1) + "帧.bmp";
-					//imwrite(name, lastImg);
-					Mat img3(imgSrcArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
-					imgSrcArr[t].copyTo(img3, maskBlur);
-					addWeighted(imgSrcArr[t], 0.3, img3, 0.7, 0, lastImg);
+
+					string name = "E:/Projects/OpenCV/DAVIS-data/image/output/01/第" + to_string(t + 1) + "帧.bmp";
+					imwrite(name, lastImg);
+
+					//Mat img3(imgSrcArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
+					//imgSrcArr[t].copyTo(img3, maskBlur);
+					//addWeighted(imgSrcArr[t], 0.3, img3, 0.7, 0, lastImg);
 
 					videowriter << lastImg;
 				}
 				_time1 = (static_cast<double>(getTickCount()) - _time1) / getTickFrequency();
-				printf("超像素用时为%f\n", _time1);//显示时间
+				printf("滤波用时为%f\n", _time1);//显示时间
 
 				//清除容器，释放内存
 				for (int i = imgSrcArr.size() - 1;i >= 0;i--) {
