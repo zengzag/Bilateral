@@ -259,7 +259,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 							if (pixCount > 0) {
 								int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];								
-								if (bgdcount > pixCount) {
+								if (bgdcount >= 2 * pixCount) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									bgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
@@ -268,7 +268,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 										bgdWeight[tGmm].push_back(weight);
 									}
 								}
-								if (fgdcount > pixCount) {
+								if (fgdcount >= 2 * pixCount) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									fgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
@@ -335,6 +335,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 
 		bgModelArr.push_back(bgModel); 
 		fgModelArr.push_back(fgModel);
+		
 
 		std::vector<Vec3f> unSamples;    //错误分类点
 		for (int i = 0; i < (int)bgdSamples.size(); i++) {
@@ -371,7 +372,6 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 				unGMM.addSample(unLabels.at<int>(i, 0), unSamples[i], 1);
 			unGMM.endLearning();
 		}
-
 		unModelArr.push_back(unModel);
 
 
@@ -503,17 +503,13 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 									double bgd = bgdGMM(color);
 									double fgd = fgdGMM(color);
 									double un = unGMM(color);
-									/*double weight = un / (bgd + fgd + un);*/
-									double weight = 0.5;
+									double weight = un / (bgd + fgd + un);
+									//double weight = 0.5;
 									fromSource = (- log(bgd / (bgd + fgd))*(1- weight) - log((bSum + 1) /(fSum + bSum+1))*weight)*sqrt(pixCount);
 									toSink = (- log(fgd / (bgd + fgd))*(1 - weight) - log((fSum + 1) / (fSum + bSum + 1))*weight)*sqrt(pixCount);
 									/*fromSource = (-log(bgd / (bgd + fgd)))*sqrt(pixCount);
 									toSink = (-log(fgd / (bgd + fgd)))*sqrt(pixCount);*/
 								}
-
-								//原方法
-								/*fromSource =  (toSinkSum + 2);
-								toSink =  (fromSourceSum + 2);*/
 
 
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
@@ -542,28 +538,29 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
-								/*for (int xN = 0; xN < x ; xN++) {
-									for (int yN = 0; yN < gridSize[2]; yN++) {
-										int pointN[6] = { t,xN,yN,r,g,b };
-										int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
-										int vNewPixCount = grid.at<Vec< int, 4 > >(pointN)[pixSum];
-										
-										if (vNewPixCount >0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
-											double vPixSumDiff = (double)pixCount/(double)vNewPixCount;
+								for (int tN = t; tN >= 0&& tN > t-3;tN--) {
+									for (int xN = 0; xN < x; xN++) {
+										for (int yN = 0; yN < gridSize[2]; yN++) {
+											int pointN[6] = { tN,xN,yN,r,g,b };
+											int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
+											int vNewPixCount = grid.at<Vec< int, 4 > >(pointN)[pixSum];
 
-											Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-											double colorDst = (diff.dot(diff));
-											if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 128.0) {
-												double w = 1.0 * exp(-bata*colorDst) * sqrt(vNewPixCount);
-												graph.addEdges(vtxIdx, vtxIdxNew, w, w);
-												eCount++;
-												eCount2++;
-											};
+											if (vNewPixCount > 0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
+												double vPixSumDiff = (double)pixCount / (double)vNewPixCount;
+
+												Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+												double colorDst = (diff.dot(diff));
+												if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 64.0) {
+													double w = 1.0 * exp(-bata*colorDst) * sqrt(vNewPixCount);
+													graph.addEdges(vtxIdx, vtxIdxNew, w, w);
+													eCount++;
+													eCount2++;
+												};
+											}
+
 										}
-
 									}
-								}*/
-						
+								}
 
 							}
 						}

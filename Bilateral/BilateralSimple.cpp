@@ -296,12 +296,12 @@ void BilateralSimple::InitGmms(Mat& mask)
 								int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								
-								if (bgdcount > pixCount) {
+								if (bgdcount >2*pixCount) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									bgdSamples.push_back(color);
 									bgdWeight.push_back(bgdcount);
 								}
-								if (fgdcount > pixCount) {
+								if (fgdcount > 2 * pixCount) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									fgdSamples.push_back(color);
 									fgdWeight.push_back(fgdcount);
