@@ -538,7 +538,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
-								for (int tN = t; tN >= 0&& tN > t-3;tN--) {
+								/*for (int tN = t; tN >= 0&& tN > t-3;tN--) {
 									for (int xN = 0; xN < x; xN++) {
 										for (int yN = 0; yN < gridSize[2]; yN++) {
 											int pointN[6] = { tN,xN,yN,r,g,b };
@@ -557,10 +557,9 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 													eCount2++;
 												};
 											}
-
 										}
 									}
-								}
+								}*/
 
 							}
 						}
