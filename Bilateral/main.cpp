@@ -420,21 +420,21 @@ int main() {
 	//CAP_PROP_FRAME_COUNTCompatTelRunner
 	for (int times = 0; times < 1; times++)
 	{
-		int key[5] = { 3,13,23,33,43 };
-		for (int i = 0;i < 50;i++) {
+		int key[8] = { 3,13,23,33};
+		for (int i = 0;i < 40;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		for (int i = 0;i < 5;i++) {
-			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
-			Mat mask = imread(name, 0);
-			keyMaskArr.push_back(mask);
-			imshow("目标", imgSrcArr[0]);//显示结果
-		}
+		//for (int i = 0;i < 4;i++) {
+		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+		//	Mat mask = imread(name, 0);
+		//	keyMaskArr.push_back(mask);
+		//	imshow("目标", imgSrcArr[0]);//显示结果
+		//}
 
-		//interact(openName, key,5);
+		interact(openName, key,4);
 
 		printf("标记结束\n");
 		while (1)

@@ -33,211 +33,19 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 				uchar a = maskArr[t].at<uchar>(x, y);
 				if (maskArr[t].at<uchar>(x, y) == GC_BGD) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[bgdSum] += 5;
-					if (point[0] > 0) {
-						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[1] > 0) {
-						int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[2] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[3] > 0) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] - 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[4] > 0) {
-						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] - 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[5] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] - 1 };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[0] < gridSize[0] - 1) {
-						int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[1] < gridSize[1] - 1) {
-						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[2] < gridSize[2] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[3] < gridSize[3] - 1) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] + 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[4] < gridSize[4] - 1) {
-						int pointN[6] = { point[0],point[1],point[2],point[3],point[4] + 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[5] < gridSize[5] - 1) {
-						int pointN[6] = { point[0],point[1],point[2],point[3],point[4],point[5] + 1 };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 3;
 				}
 				else if (maskArr[t].at<uchar>(x, y) == GC_FGD/*GC_FGD*/) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[fgdSum] += 5;
-					if (point[0] > 0) {
-						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[1] > 0) {
-						int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[2] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[3] > 0) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] - 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[4] > 0) {
-						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] - 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[5] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] - 1 };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[0] < gridSize[0] - 1) {
-						int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[1] < gridSize[1] - 1) {
-						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[2] < gridSize[2] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[3] < gridSize[3] - 1) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] + 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[4] < gridSize[4] - 1) {
-						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] + 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[5] < gridSize[5] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] + 1 };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 3;
 				}
 				else if (maskArr[t].at<uchar>(x, y) == GC_PR_FGD/*GC_FGD*/) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[fgdSum] += 2;
-					if (point[0] > 0) {
-						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[1] > 0) {
-						int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[2] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[3] > 0) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] - 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[4] > 0) {
-						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] - 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[5] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] - 1 };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[0] < gridSize[0] - 1) {
-						int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[1] < gridSize[1] - 1) {
-						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[2] < gridSize[2] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[3] < gridSize[3] - 1) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] + 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[4] < gridSize[4] - 1) {
-						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] + 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
-					if (point[5] < gridSize[5] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] + 1 };
-						grid.at<Vec< int, 4 > >(pointN)[fgdSum] += 1;
-					}
+					grid.at<Vec< int, 4 > >(point)[fgdSum] += 1;
 				}
 				else if (maskArr[t].at<uchar>(x, y) == GC_PR_BGD/*GC_FGD*/) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[bgdSum] += 2;
-					if (point[0] > 0) {
-						int pointN[6] = { point[0] - 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[1] > 0) {
-						int pointN[6] = { point[0],point[1] - 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[2] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] - 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[3] > 0) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] - 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[4] > 0) {
-						int pointN[6] = { point[0],point[1] ,point[2],point[3],point[4] - 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[5] > 0) {
-						int pointN[6] = { point[0],point[1],point[2] ,point[3],point[4],point[5] - 1 };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[0] < gridSize[0] - 1) {
-						int pointN[6] = { point[0] + 1,point[1],point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[1] < gridSize[1] - 1) {
-						int pointN[6] = { point[0],point[1] + 1,point[2],point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[2] < gridSize[2] - 1) {
-						int pointN[6] = { point[0],point[1],point[2] + 1,point[3],point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[3] < gridSize[3] - 1) {
-						int pointN[6] = { point[0] ,point[1],point[2],point[3] + 1,point[4],point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[4] < gridSize[4] - 1) {
-						int pointN[6] = { point[0],point[1],point[2],point[3],point[4] + 1,point[5] };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
-					if (point[5] < gridSize[5] - 1) {
-						int pointN[6] = { point[0],point[1],point[2],point[3],point[4],point[5] + 1 };
-						grid.at<Vec< int, 4 > >(pointN)[bgdSum] += 1;
-					}
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;					
 				}
 			}
 		}
@@ -259,7 +67,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 							if (pixCount > 0) {
 								int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];								
-								if (bgdcount >= 2 * pixCount) {
+								if (bgdcount >= pixCount) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									bgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
@@ -268,7 +76,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 										bgdWeight[tGmm].push_back(weight);
 									}
 								}
-								if (fgdcount >= 2 * pixCount) {
+								if (fgdcount >= pixCount) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									fgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
@@ -462,8 +270,7 @@ static double calcBeta(const Mat& img)
 void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	double _time = static_cast<double>(getTickCount());
 
-	//double bata = calcBeta(imgSrcArr[0]);
-	double bata = 0.01;
+	double bata = calcBeta(imgSrcArr[0]);
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
 	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
@@ -491,19 +298,19 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								double fSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double bSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
-								if ((bSum > 4*pixCount)&& fSum == 0) {
+								if ((bSum > 2 * pixCount)&& fSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
 								}
-								else if (bSum == 0 && (fSum > 4 * pixCount)) {
+								else if (bSum == 0 && (fSum > 2 * pixCount)) {
 									fromSource = 9999;
 									toSink = 0;
 								}
 								else {
 									double bgd = bgdGMM(color);
 									double fgd = fgdGMM(color);
-									double un = unGMM(color);
-									double weight = un / (bgd + fgd + un);
+									double un = unGMM(color);//颜色模型的可信度
+									double weight = un / (bgd + fgd + un);//颜色模型与关键帧信息的权重。
 									//double weight = 0.5;
 									fromSource = (- log(bgd / (bgd + fgd))*(1- weight) - log((bSum + 1) /(fSum + bSum+1))*weight)*sqrt(pixCount);
 									toSink = (- log(fgd / (bgd + fgd))*(1 - weight) - log((fSum + 1) / (fSum + bSum + 1))*weight)*sqrt(pixCount);
@@ -519,8 +326,8 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								for (int tN = t; tN > t - 2 && tN >= 0&& tN < gridSize[0]; tN--) {
 									for (int xN = x ; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
 										for (int yN = y ; yN > y - 2 && yN >= 0 && yN < gridSize[2]; yN--) {
-											for (int rN = r; rN > r - 2 && rN >= 0 && rN < gridSize[3]; rN--) {
-												for (int gN = g; gN > g - 2 && gN >= 0 && gN < gridSize[4]; gN--) {
+											for (int rN = r ; rN > r - 2 && rN >= 0 && rN < gridSize[3]; rN--) {
+												for (int gN = g ; gN > g - 2 && gN >= 0 && gN < gridSize[4]; gN--) {
 													for (int bN = b ; bN > b - 2 && bN >= 0 && bN < gridSize[5]; bN--) {
 														int pointN[6] = { tN,xN,yN,rN,gN,bN };
 														int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
