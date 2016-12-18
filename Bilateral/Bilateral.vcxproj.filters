@@ -21,13 +21,13 @@
     <ClCompile Include="GMM.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="slic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="BilateralSimple.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

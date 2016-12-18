@@ -4,38 +4,67 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <io.h>
 
 using namespace::cv;
+using namespace::std;
+
+void getFiles(string path, string exd, vector<string>& files)
+{
+	//文件句柄
+	intptr_t   hFile = 0;
+	//文件信息
+	struct _finddata_t fileinfo;
+	string pathName, exdName;
+
+	if (0 != strcmp(exd.c_str(), ""))
+	{
+		exdName = "\\*." + exd;
+	}
+	else
+	{
+		exdName = "\\*";
+	}
+
+	if ((hFile = _findfirst(pathName.assign(path).append(exdName).c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//如果是文件夹中仍有文件夹,迭代之
+			//如果不是,加入列表
+			if ((fileinfo.attrib &  _A_SUBDIR))
+			{
+				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
+					getFiles(pathName.assign(path).append("\\").append(fileinfo.name), exd, files);
+			}
+			else
+			{
+				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
+					files.push_back(pathName.assign(path).append("\\").append(fileinfo.name));
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+}
 
 int main() {
+
+	vector<string> files;
+	std::string name = "horse";
+	std::string filePath = "E:\\Projects\\OpenCV\\DAVIS-data\\jump-dataset\\VIDEO-SNAPCUT\\" + name;
+	getFiles(filePath, "jpg", files);
+	
 	VideoWriter videowriter;
-	Mat g_imgSrc;
-
-	std::string name = "123";
-	std::string strPmgSrc = "monkeydog/Comp_195.bmp";
-	std::string	strVideowriter = "E:/Projects/OpenCV/DAVIS-data/image/" + name + ".avi";
-
-	g_imgSrc = imread(strPmgSrc);
+	std::string	strVideowriter = "E:\\Projects\\OpenCV\\DAVIS-data\\jump-dataset\\" + name + ".avi";
+	Mat g_imgSrc = imread(files[0]);
 	videowriter.open(strVideowriter, CV_FOURCC('D', 'I', 'V', 'X'),24, Size(g_imgSrc.cols, g_imgSrc.rows));
-	for (int i = 195; i < 266; i++)
-	{
-		std::stringstream s;
-		std::string str;
-		s <<"monkeydog/Comp_"<< i << ".bmp";
-		s >> str;
-		std::cout << str << std::endl;
-		g_imgSrc = imread(str);
+
+	int size = files.size();
+	for (int i = 0; i < size; i++)
+	{		
+		g_imgSrc = imread(files[i]);
 		videowriter << g_imgSrc;
 	}
-	/*for (int i = 10; i < 99; i++)
-	{
-		std::stringstream s;
-		std::string str;
-		s << "E:/Projects/OpenCV/DAVIS-data/DAVIS/JPEGImages/480p/" << name << "/000" << i << ".jpg";
-		s >> str;
-		std::cout << str << std::endl;
-		g_imgSrc = imread(str);
-		videowriter << g_imgSrc;
-	}*/
+
 	videowriter.release();
 }

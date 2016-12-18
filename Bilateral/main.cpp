@@ -302,7 +302,7 @@ static void on_mouse(int event, int x, int y, int flags, void* param)
 void blurBySlic(Mat &imgSrc,Mat &mask) {
 	Mat lableMat;
 	SLIC slic;
-	int numSuperpixels = slic.GenerateSuperpixels(imgSrc, 500);
+	int numSuperpixels = slic.GenerateSuperpixels(imgSrc, 1500);
 	slic.GetLabelInMat(lableMat);
 	double *fLabel = new double[numSuperpixels];
 	double *bLabel = new double[numSuperpixels];
@@ -329,9 +329,9 @@ void blurBySlic(Mat &imgSrc,Mat &mask) {
 		for (int y = 0;y < mask.cols;y++) {
 			if (bLabel[lableMat.at<int>(x, y)]>0.9) {
 				mask.at<uchar>(x, y) = 0;
-			}/*else if (fLabel[lableMat.at<int>(x, y)]>0.9) {
+			}else if (fLabel[lableMat.at<int>(x, y)]>0.9) {
 				mask.at<uchar>(x, y) = 1;
-			}*/
+			}
 		}
 	}
 
@@ -413,7 +413,7 @@ static void interact(string openName, int* key,int num)
 
 
 int main() {
-	string openName = "333";
+	string openName = "dance";
 	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
@@ -493,13 +493,13 @@ int main() {
 				maskArr.clear();
 				printf("µÚ%d¶Î·Ö¸î½áÊø\n", times + 1);
 				
-				videowriter.release();
+				//videowriter.release();
 				//break;
 			}
 		}
 	}
 
-	//videowriter.release();
+	videowriter.release();
 	video.release();
 	imgSrcArr.clear();
 	cv::destroyAllWindows();

@@ -72,7 +72,6 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 									bgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
 										double weight = bgdcount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm));
-										//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
 										bgdWeight[tGmm].push_back(weight);
 									}
 								}
@@ -81,7 +80,6 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 									fgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
 										double weight = fgdcount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm));
-										//权值：确定的前背景乘5；包含的像素越多权值越大；t与对应当前模型越近越大；除100防止权值过大溢出。
 										fgdWeight[tGmm].push_back(weight);
 									}
 								}
@@ -271,14 +269,15 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	double _time = static_cast<double>(getTickCount());
 
 	double bata = calcBeta(imgSrcArr[0]);
+	printf("bata=%f\n", bata);
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
 	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
 	int eCount = 0, eCount2 = 0;
+	
 	for (int t = 0; t < gridSize[0]; t++) {
 		int gmmT = t / 2;
 		GMM bgdGMM(bgModelArr[gmmT]), fgdGMM(fgModelArr[gmmT]), unGMM(unModelArr[gmmT]);
-
 		for (int x = 0; x < gridSize[1]; x++) {
 			for (int y = 0; y < gridSize[2]; y++) {
 				for (int r = 0; r < gridSize[3]; r++) {
@@ -286,15 +285,12 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 						for (int b = 0; b < gridSize[5]; b++) {
 							int point[6] = { t,x,y,r,g,b };
 							int pixCount = grid.at<Vec< int, 4 > >(point)[pixSum];
-							if (pixCount > 0) {
-								int vtxIdx = graph.addVtx();//存在像素点映射就加顶点
-
+							if (pixCount > 0) {								
+								int vtxIdx = graph.addVtx();//存在像素点映射就加顶点								
 								//先验项
 								grid.at<Vec< int, 4 > >(point)[vIdx] = vtxIdx;
-
 								Vec3f color = gridColor.at<Vec3f>(point);
 								double fromSource, toSink;
-
 								double fSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double bSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
@@ -311,17 +307,12 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 									double fgd = fgdGMM(color);
 									double un = unGMM(color);//颜色模型的可信度
 									double weight = un / (bgd + fgd + un);//颜色模型与关键帧信息的权重。
-									//double weight = 0.5;
+									//weight = 0.8;
 									fromSource = (- log(bgd / (bgd + fgd))*(1- weight) - log((bSum + 1) /(fSum + bSum+1))*weight)*sqrt(pixCount);
 									toSink = (- log(fgd / (bgd + fgd))*(1 - weight) - log((fSum + 1) / (fSum + bSum + 1))*weight)*sqrt(pixCount);
-									/*fromSource = (-log(bgd / (bgd + fgd)))*sqrt(pixCount);
-									toSink = (-log(fgd / (bgd + fgd)))*sqrt(pixCount);*/
 								}
-
-
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
-
-
+								
 								//平滑项
 								for (int tN = t; tN > t - 2 && tN >= 0&& tN < gridSize[0]; tN--) {
 									for (int xN = x ; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
@@ -358,7 +349,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 												Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 												double colorDst = (diff.dot(diff));
 												if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 64.0) {
-													double w = 1.0 * exp(-bata*colorDst) * sqrt(vNewPixCount);
+													double w = 0.1 * exp(-bata*colorDst) * sqrt(vNewPixCount);
 													graph.addEdges(vtxIdx, vtxIdxNew, w, w);
 													eCount++;
 													eCount2++;
@@ -367,7 +358,6 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}*/
-
 							}
 						}
 					}
