@@ -66,12 +66,12 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 							int pixCount = grid.at<Vec< int, 4 > >(point)[pixSum];
 							if (pixCount > 0) {
 								int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
-								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];								
+								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								if (bgdcount >= pixCount) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									bgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
-										double weight = bgdcount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm));
+										double weight = pixCount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm))*((bgdcount+1.0)/(fgdcount+ bgdcount + 1.0));
 										bgdWeight[tGmm].push_back(weight);
 									}
 								}
@@ -79,7 +79,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 									Vec3f color = gridColor.at<Vec3f>(point);
 									fgdSamples.push_back(color);
 									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
-										double weight = fgdcount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm));
+										double weight = pixCount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm))*((fgdcount + 1.0) / (fgdcount + bgdcount + 1.0));
 										fgdWeight[tGmm].push_back(weight);
 									}
 								}
