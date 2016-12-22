@@ -19,13 +19,13 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 {
 	double _time = static_cast<double>(getTickCount());//计时
 
-	int gmmSize = maskArr.size();
+	int maskSize = maskArr.size();
 	int tSize = imgSrcArr.size();
 	int xSize = imgSrcArr[0].rows;
 	int ySize = imgSrcArr[0].cols;
 	int point[6] = { 0,0,0,0,0,0 };
 
-	for (int t = 0; t < gmmSize; t++) {
+	for (int t = 0; t < maskSize; t++) {
 		for (int x = 0; x < xSize; x++)
 		{
 			for (int y = 0; y < ySize; y++)
@@ -45,7 +45,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 				}
 				else if (maskArr[t].at<uchar>(x, y) == GC_PR_BGD/*GC_FGD*/) {
 					getGridPoint(index[t], Point(x, y), point, tSize, xSize, ySize);
-					grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;					
+					grid.at<Vec< int, 4 > >(point)[bgdSum] += 1;
 				}
 			}
 		}
@@ -53,8 +53,8 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 
 	std::vector<Vec3f> bgdSamples;    //从背景点存储背景颜色
 	std::vector<Vec3f> fgdSamples;    //从前景点存储前景颜色
-	std::vector<std::vector<double> > bgdWeight(gmmSize);    //从背景点存储背景权值
-	std::vector<std::vector<double> > fgdWeight(gmmSize);    //从前景点存储前景权值
+	std::vector<std::vector<double> > bgdWeight(gridSize[0]);    //从背景点存储背景权值
+	std::vector<std::vector<double> > fgdWeight(gridSize[0]);    //从前景点存储前景权值
 
 	for (int t = 0; t < gridSize[0]; t++) {
 		for (int x = 0; x < gridSize[1]; x++) {
@@ -67,19 +67,19 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 							if (pixCount > 0) {
 								int bgdcount = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								int fgdcount = grid.at<Vec< int, 4 > >(point)[fgdSum];
-								if (bgdcount >= pixCount) {
+								if (bgdcount > (pixCount / 2)) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									bgdSamples.push_back(color);
-									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
-										double weight = pixCount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm))*((bgdcount+1.0)/(fgdcount+ bgdcount + 1.0));
+									for (int tGmm = 0; tGmm < gridSize[0]; tGmm++) {
+										double weight = pixCount*exp(-2 * (t - tGmm)*(t - tGmm))*((bgdcount + 1.0) / (fgdcount + bgdcount + 1.0));
 										bgdWeight[tGmm].push_back(weight);
 									}
 								}
-								if (fgdcount >= pixCount) {
+								if (fgdcount > (pixCount / 2)) {
 									Vec3f color = gridColor.at<Vec3f>(point);
 									fgdSamples.push_back(color);
-									for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
-										double weight = pixCount*exp(-2 * (t / 2 - tGmm)*(t / 2 - tGmm))*((fgdcount + 1.0) / (fgdcount + bgdcount + 1.0));
+									for (int tGmm = 0; tGmm < gridSize[0]; tGmm++) {
+										double weight = pixCount*exp(-2 * (t - tGmm)*(t - tGmm))*((fgdcount + 1.0) / (fgdcount + bgdcount + 1.0));
 										fgdWeight[tGmm].push_back(weight);
 									}
 								}
@@ -91,7 +91,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 		}
 	}
 
-	for (int tGmm = 0; tGmm < gmmSize; tGmm++) {
+	for (int tGmm = 0; tGmm < gridSize[0]; tGmm++) {
 		Mat bgModel, fgModel;
 		GMM bgdGMM(bgModel), fgdGMM(fgModel);
 
@@ -139,21 +139,27 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 			fgdGMM.endLearning();
 		}
 
-		bgModelArr.push_back(bgModel); 
+		bgModelArr.push_back(bgModel);
 		fgModelArr.push_back(fgModel);
-		
+
 
 		std::vector<Vec3f> unSamples;    //错误分类点
+		std::vector<double>  unWeight;
+
 		for (int i = 0; i < (int)bgdSamples.size(); i++) {
 			Vec3d color = bgdSamples[i];
-			if (bgdGMM(color) < fgdGMM(color)) {
+			double b = bgdGMM(color), f = fgdGMM(color);
+			if (b < f) {
 				unSamples.push_back(color);
+				unWeight.push_back((f - b) / f);
 			}
 		}
 		for (int i = 0; i < (int)fgdSamples.size(); i++) {
 			Vec3d color = fgdSamples[i];
-			if (bgdGMM(color) > fgdGMM(color)) {
+			double b = bgdGMM(color), f = fgdGMM(color);
+			if (b > f) {
 				unSamples.push_back(color);
+				unWeight.push_back((b - f) / b);
 			}
 		}
 		Mat unModel;
@@ -164,7 +170,7 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 			TermCriteria(CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType);
 		unGMM.initLearning();
 		for (int i = 0; i < (int)unSamples.size(); i++)
-			unGMM.addSample(unLabels.at<int>(i, 0), unSamples[i], 1);
+			unGMM.addSample(unLabels.at<int>(i, 0), unSamples[i], unWeight[i]);
 		unGMM.endLearning();
 		for (int times = 0; times < 3; times++)
 		{
@@ -175,14 +181,13 @@ void Bilateral::InitGmms(std::vector<Mat>& maskArr, int* index)
 			}
 			unGMM.initLearning();
 			for (int i = 0; i < (int)unSamples.size(); i++)
-				unGMM.addSample(unLabels.at<int>(i, 0), unSamples[i], 1);
+				unGMM.addSample(unLabels.at<int>(i, 0), unSamples[i], unWeight[i]);
 			unGMM.endLearning();
 		}
 		unModelArr.push_back(unModel);
 
-
 	}
-	
+
 	_time = (static_cast<double>(getTickCount()) - _time) / getTickFrequency();
 	printf("高斯建模用时%f\n", _time);//显示时间
 }
@@ -269,14 +274,13 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	double _time = static_cast<double>(getTickCount());
 
 	double bata = calcBeta(imgSrcArr[0]);
-	printf("bata=%f\n", bata);
 	int vtxCount = calculateVtxCount();  //顶点数，每一个像素是一个顶点  
 	int edgeCount = 2 * 256 * vtxCount;  //边数，需要考虑图边界的边的缺失
 	graph.create(vtxCount, edgeCount);
-	int eCount = 0, eCount2 = 0;
-	
+	int eCount = 0, eCount2 = 0, eCount3 = 0;
+
 	for (int t = 0; t < gridSize[0]; t++) {
-		int gmmT = t / 2;
+		int gmmT = t;
 		GMM bgdGMM(bgModelArr[gmmT]), fgdGMM(fgModelArr[gmmT]), unGMM(unModelArr[gmmT]);
 		for (int x = 0; x < gridSize[1]; x++) {
 			for (int y = 0; y < gridSize[2]; y++) {
@@ -285,7 +289,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 						for (int b = 0; b < gridSize[5]; b++) {
 							int point[6] = { t,x,y,r,g,b };
 							int pixCount = grid.at<Vec< int, 4 > >(point)[pixSum];
-							if (pixCount > 0) {								
+							if (pixCount > 0) {
 								int vtxIdx = graph.addVtx();//存在像素点映射就加顶点								
 								//先验项
 								grid.at<Vec< int, 4 > >(point)[vIdx] = vtxIdx;
@@ -294,35 +298,43 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								double fSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double bSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
 								//综合方法
-								if ((bSum > 2 * pixCount)&& fSum == 0) {
+								if ((bSum >= pixCount) && fSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
+									eCount2++;
 								}
-								else if (bSum == 0 && (fSum > 2 * pixCount)) {
+								else if (bSum == 0 && (fSum >= pixCount)) {
 									fromSource = 9999;
 									toSink = 0;
+									eCount2++;
 								}
 								else {
 									double bgd = bgdGMM(color);
 									double fgd = fgdGMM(color);
-									double un = unGMM(color);//颜色模型的可信度
-									double weight = un / (bgd + fgd + un);//颜色模型与关键帧信息的权重。
-									//weight = 0.8;
-									fromSource = (- log(bgd / (bgd + fgd))*(1- weight) - log((bSum + 1) /(fSum + bSum+1))*weight)*sqrt(pixCount);
-									toSink = (- log(fgd / (bgd + fgd))*(1 - weight) - log((fSum + 1) / (fSum + bSum + 1))*weight)*sqrt(pixCount);
+									double un = unGMM(color);//颜色模型的可信度,越大越不可信。
+									double unWeight = 1.0 - (un / (bgd + fgd + un));//颜色模型权重。
+									double sumWeight = abs(bSum - fSum) / (bSum + fSum + 1.0);//标记权重
+									if (unWeight < 0.5) {
+										bgd = fgd;
+										eCount3++;
+									}									
+									//unWeight = 0.5;	sumWeight = 0.5;
+									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
+									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
+
 								}
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
-								
+
 								//平滑项
-								for (int tN = t; tN > t - 2 && tN >= 0&& tN < gridSize[0]; tN--) {
-									for (int xN = x ; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
-										for (int yN = y ; yN > y - 2 && yN >= 0 && yN < gridSize[2]; yN--) {
-											for (int rN = r ; rN > r - 2 && rN >= 0 && rN < gridSize[3]; rN--) {
-												for (int gN = g ; gN > g - 2 && gN >= 0 && gN < gridSize[4]; gN--) {
-													for (int bN = b ; bN > b - 2 && bN >= 0 && bN < gridSize[5]; bN--) {
+								for (int tN = t; tN > t - 2 && tN >= 0 && tN < gridSize[0]; tN--) {
+									for (int xN = x; xN > x - 2 && xN >= 0 && xN < gridSize[1]; xN--) {
+										for (int yN = y; yN > y - 2 && yN >= 0 && yN < gridSize[2]; yN--) {
+											for (int rN = r; rN > r - 2 && rN >= 0 && rN < gridSize[3]; rN--) {
+												for (int gN = g; gN > g - 2 && gN >= 0 && gN < gridSize[4]; gN--) {
+													for (int bN = b; bN > b - 2 && bN >= 0 && bN < gridSize[5]; bN--) {
 														int pointN[6] = { tN,xN,yN,rN,gN,bN };
 														int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
-														if (grid.at<Vec< int, 4 > >(pointN)[pixSum]>0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
+														if (grid.at<Vec< int, 4 > >(pointN)[pixSum] > 0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
 															double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
 															Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 															double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
@@ -336,7 +348,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
-								/*for (int tN = t; tN >= 0&& tN > t-3;tN--) {
+								for (int tN = t; tN >= 0&& tN > t-2;tN--) {
 									for (int xN = 0; xN < x; xN++) {
 										for (int yN = 0; yN < gridSize[2]; yN++) {
 											int pointN[6] = { tN,xN,yN,r,g,b };
@@ -348,8 +360,8 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 
 												Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 												double colorDst = (diff.dot(diff));
-												if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 64.0) {
-													double w = 0.1 * exp(-bata*colorDst) * sqrt(vNewPixCount);
+												if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 128.0) {
+													double w = 0.2 * exp(-bata*colorDst) * sqrt(vNewPixCount);
 													graph.addEdges(vtxIdx, vtxIdxNew, w, w);
 													eCount++;
 													eCount2++;
@@ -357,7 +369,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 											}
 										}
 									}
-								}*/
+								}
 							}
 						}
 					}
@@ -371,7 +383,8 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	printf("图割构图用时 %f\n", _time);//显示时间
 	printf("顶点的总数 %d\n", vtxCount);
 	printf("边的总数 %d\n", eCount);
-	printf("E3边的总数 %d\n", eCount2);
+	printf("eCount2的总数 %d\n", eCount2);
+	printf("eCount3的总数 %d\n", eCount3);
 }
 
 

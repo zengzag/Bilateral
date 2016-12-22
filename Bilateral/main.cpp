@@ -342,7 +342,7 @@ void blurBySlic(Mat &imgSrc,Mat &mask) {
 static void interact(string openName, int* key,int num)
 {
 	std::vector<Mat> imgInteArr;
-	Mat inteMask, gcappImg,maskTemp;
+	Mat inteMask, gcappImg, maskTemp;//inteMask当前帧的分割结果，maskTemp用来滤波和暗化背景，gcappImg交互显示的图片。
 	bool isInitInte = false;
 	for (int i = 0;i < num;i++) {
 		const string winName = "原图像";
@@ -352,7 +352,7 @@ static void interact(string openName, int* key,int num)
 			imgSrcArr[key[i]].copyTo(gcappImg);
 			gcapp.setImageAndWinName(gcappImg, winName);
 
-			Mat img1,img2;
+			Mat img1,img2;//前一帧与当前帧的图片
 			imgSrcArr[key[i-1]].copyTo(img1);
 			imgSrcArr[key[i]].copyTo(img2);
 			imgInteArr.push_back(img1);
@@ -413,28 +413,28 @@ static void interact(string openName, int* key,int num)
 
 
 int main() {
-	string openName = "222";
+	string openName = "333";
 	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
 	//CAP_PROP_FRAME_COUNTCompatTelRunner
 	for (int times = 0; times < 1; times++)
 	{
-		int key[8] = { 3,13,23,33};
-		for (int i = 0;i < 35;i++) {
+		int key[8] = { 3,23,43,63};
+		for (int i = 0;i < 65;i++) {
 			Mat imgSrc;
 			video >> imgSrc;
 			imgSrcArr.push_back(imgSrc);
 		}
 
-		//for (int i = 0;i < 4;i++) {
-		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
-		//	Mat mask = imread(name, 0);
-		//	keyMaskArr.push_back(mask);
-		//	imshow("目标", imgSrcArr[0]);//显示结果
-		//}
+		for (int i = 0;i < 4;i++) {
+			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+			Mat mask = imread(name, 0);
+			keyMaskArr.push_back(mask);
+			imshow("目标", imgSrcArr[0]);//显示结果
+		}
 
-		interact(openName, key,4);
+		//interact(openName, key,4);
 
 		printf("标记结束\n");
 		while (1)
