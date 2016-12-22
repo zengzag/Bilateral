@@ -338,7 +338,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 															double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
 															Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 															double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-															double w = 1.0 * e * sqrt(num);
+															double w = 0.4 * e * sqrt(num);
 															graph.addEdges(vtxIdx, vtxIdxNew, w, w);
 															eCount++;
 														}
@@ -348,7 +348,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
-								for (int tN = t; tN >= 0&& tN > t-2;tN--) {
+								/*for (int tN = t; tN >= 0&& tN > t-2;tN--) {
 									for (int xN = 0; xN < x; xN++) {
 										for (int yN = 0; yN < gridSize[2]; yN++) {
 											int pointN[6] = { tN,xN,yN,r,g,b };
@@ -369,7 +369,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 											}
 										}
 									}
-								}
+								}*/
 							}
 						}
 					}

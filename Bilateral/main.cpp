@@ -413,7 +413,7 @@ static void interact(string openName, int* key,int num)
 
 
 int main() {
-	string openName = "333";
+	string openName = "blackswan";
 	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
@@ -423,18 +423,24 @@ int main() {
 		int key[8] = { 3,23,43,63};
 		for (int i = 0;i < 65;i++) {
 			Mat imgSrc;
-			video >> imgSrc;
-			imgSrcArr.push_back(imgSrc);
+			if (video.read(imgSrc)) {
+				imgSrcArr.push_back(imgSrc);
+			}
+			else {
+				imgSrcArr[i - 1].copyTo(imgSrc);
+				imgSrcArr.push_back(imgSrc);
+			}
+			
 		}
 
-		for (int i = 0;i < 4;i++) {
-			string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
-			Mat mask = imread(name, 0);
-			keyMaskArr.push_back(mask);
-			imshow("目标", imgSrcArr[0]);//显示结果
-		}
+		//for (int i = 0;i < 4;i++) {
+		//	string name = "E:/Projects/OpenCV/DAVIS-data/image/mask/" + openName + "/" + to_string(i) + ".bmp";
+		//	Mat mask = imread(name, 0);
+		//	keyMaskArr.push_back(mask);
+		//	imshow("目标", imgSrcArr[0]);//显示结果
+		//}
 
-		//interact(openName, key,4);
+		interact(openName, key,4);
 
 		printf("标记结束\n");
 		while (1)

@@ -288,10 +288,13 @@ void BilateralSimple::constructGCGraph(GCGraph<double>& graph) {
 									double bgd = bgdGMM(color);
 									double fgd = fgdGMM(color);
 									double un = unGMM(color);
-									double weight = un / (bgd + fgd + un);
-									//weight = 0.5;
-									fromSource = (-log(bgd / (bgd + fgd))*(1 - weight) - log((bSum + 1) / (fSum + bSum + 1))*weight)*sqrt(pixCount);
-									toSink = (-log(fgd / (bgd + fgd))*(1 - weight) - log((fSum + 1) / (fSum + bSum + 1))*weight)*sqrt(pixCount);
+									double unWeight = 1.0 - (un / (bgd + fgd + un));//颜色模型权重。
+									double sumWeight = abs(bSum - fSum) / (bSum + fSum + 1.0);//标记权重
+									if (unWeight < 0.5) 
+										bgd = fgd;								
+									//unWeight = 0.5;	sumWeight = 0.5;
+									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
+									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
 								}
 
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
