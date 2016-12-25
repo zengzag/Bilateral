@@ -297,16 +297,16 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								double fromSource, toSink;
 								double fSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double bSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
+
+								bool hasE3 = true;
 								//综合方法
-								if ((bSum >= pixCount) && fSum == 0) {
+								if ((bSum > pixCount) && fSum == 0) {
 									fromSource = 0;
 									toSink = 9999;
-									eCount2++;
 								}
-								else if (bSum == 0 && (fSum >= pixCount)) {
+								else if (bSum == 0 && (fSum > pixCount)) {
 									fromSource = 9999;
 									toSink = 0;
-									eCount2++;
 								}
 								else {
 									double bgd = bgdGMM(color);
@@ -316,8 +316,9 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 									double sumWeight = abs(bSum - fSum) / (bSum + fSum + 1.0);//标记权重
 									if (unWeight < 0.5) {
 										bgd = fgd;
+										hasE3 = false;
 										eCount3++;
-									}									
+									}
 									//unWeight = 0.5;	sumWeight = 0.5;
 									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
 									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
@@ -338,7 +339,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 															double num = sqrt(grid.at<Vec< int, 4 > >(point)[pixSum] * grid.at<Vec< int, 4 > >(pointN)[pixSum] + 1);
 															Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 															double e = exp(-bata*diff.dot(diff));  //矩阵的点乘，也就是各个元素平方的和
-															double w = 0.4 * e * sqrt(num);
+															double w = 1.0 * e * sqrt(num);
 															graph.addEdges(vtxIdx, vtxIdxNew, w, w);
 															eCount++;
 														}
@@ -348,28 +349,32 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
-								/*for (int tN = t; tN >= 0&& tN > t-2;tN--) {
-									for (int xN = 0; xN < x; xN++) {
-										for (int yN = 0; yN < gridSize[2]; yN++) {
-											int pointN[6] = { tN,xN,yN,r,g,b };
-											int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
-											int vNewPixCount = grid.at<Vec< int, 4 > >(pointN)[pixSum];
+								/*if (hasE3) {
+									for (int tN = t; tN >= 0 && tN > t - 2;tN--) {
+										for (int xN = 0; xN < x; xN++) {
+											for (int yN = 0; yN < gridSize[2]; yN++) {
+												int pointN[6] = { tN,xN,yN,r,g,b };
+												int vtxIdxNew = grid.at<Vec< int, 4 > >(pointN)[vIdx];
+												int vNewPixCount = grid.at<Vec< int, 4 > >(pointN)[pixSum];
 
-											if (vNewPixCount > 0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
-												double vPixSumDiff = (double)pixCount / (double)vNewPixCount;
+												if (vNewPixCount > 0 && vtxIdxNew > 0 && vtxIdxNew != vtxIdx) {
+													double vPixSumDiff = (double)pixCount / (double)vNewPixCount;
 
-												Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
-												double colorDst = (diff.dot(diff));
-												if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 128.0) {
-													double w = 0.2 * exp(-bata*colorDst) * sqrt(vNewPixCount);
-													graph.addEdges(vtxIdx, vtxIdxNew, w, w);
-													eCount++;
-													eCount2++;
-												};
+													Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
+													double colorDst = (diff.dot(diff));
+													if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 64.0) {
+														double w = 0.2 * exp(-bata*colorDst) * sqrt(vNewPixCount);
+														graph.addEdges(vtxIdx, vtxIdxNew, w, w);
+														eCount++;
+														eCount2++;
+													};
+												}
 											}
 										}
 									}
+
 								}*/
+
 							}
 						}
 					}
