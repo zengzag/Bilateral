@@ -297,8 +297,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 								double fromSource, toSink;
 								double fSum = grid.at<Vec< int, 4 > >(point)[fgdSum];
 								double bSum = grid.at<Vec< int, 4 > >(point)[bgdSum];
-
-								bool hasE3 = true;
+								double unWeight; // 颜色模型权重。
 								//综合方法
 								if ((bSum > pixCount) && fSum == 0) {
 									fromSource = 0;
@@ -312,16 +311,15 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 									double bgd = bgdGMM(color);
 									double fgd = fgdGMM(color);
 									double un = unGMM(color);//颜色模型的可信度,越大越不可信。
-									double unWeight = 1.0 - (un / (bgd + fgd + un));//颜色模型权重。
+									unWeight = 1.0 - (un / (bgd + fgd + un));//颜色模型权重。
 									double sumWeight = abs(bSum - fSum) / (bSum + fSum + 1.0);//标记权重
 									if (unWeight < 0.5) {
 										bgd = fgd;
-										hasE3 = false;
 										eCount3++;
 									}
 									//unWeight = 0.5;	sumWeight = 0.5;
-									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
-									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
+									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1.0) / (fSum + bSum + 1.0))*sumWeight)*sqrt(pixCount);
+									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1.0) / (fSum + bSum + 1.0))*sumWeight)*sqrt(pixCount);
 
 								}
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
@@ -349,7 +347,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 										}
 									}
 								}
-								/*if (hasE3) {
+								/*if (unWeight>0) {
 									for (int tN = t; tN >= 0 && tN > t - 2;tN--) {
 										for (int xN = 0; xN < x; xN++) {
 											for (int yN = 0; yN < gridSize[2]; yN++) {
@@ -363,7 +361,7 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 													Vec3d diff = (Vec3d)color - (Vec3d)gridColor.at<Vec3f>(pointN);
 													double colorDst = (diff.dot(diff));
 													if (vPixSumDiff > 0.8 && vPixSumDiff < 1.25 && colorDst < 64.0) {
-														double w = 0.2 * exp(-bata*colorDst) * sqrt(vNewPixCount);
+														double w = 0.4 * exp(-bata*colorDst) * sqrt(vNewPixCount);
 														graph.addEdges(vtxIdx, vtxIdxNew, w, w);
 														eCount++;
 														eCount2++;
@@ -372,7 +370,6 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 											}
 										}
 									}
-
 								}*/
 
 							}
@@ -388,8 +385,8 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 	printf("图割构图用时 %f\n", _time);//显示时间
 	printf("顶点的总数 %d\n", vtxCount);
 	printf("边的总数 %d\n", eCount);
-	printf("eCount2的总数 %d\n", eCount2);
-	printf("eCount3的总数 %d\n", eCount3);
+	printf("e3的总数 %d\n", eCount2);
+	printf("unWeight<0.5的总数 %d\n", eCount3);
 }
 
 

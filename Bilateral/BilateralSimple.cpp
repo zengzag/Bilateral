@@ -293,8 +293,8 @@ void BilateralSimple::constructGCGraph(GCGraph<double>& graph) {
 									if (unWeight < 0.5) 
 										bgd = fgd;								
 									//unWeight = 0.5;	sumWeight = 0.5;
-									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
-									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1) / (fSum + bSum + 1))*sumWeight)*sqrt(pixCount);
+									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1.0) / (fSum + bSum + 1.0))*sumWeight)*sqrt(pixCount);
+									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1.0) / (fSum + bSum + 1.0))*sumWeight)*sqrt(pixCount);
 								}
 
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
