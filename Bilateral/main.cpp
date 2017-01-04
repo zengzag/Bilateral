@@ -413,19 +413,19 @@ static void interact(string openName, int* key,int num)
 
 
 int main() {
-	string openName = "222";
+	string openName = "cows";
 	video.open("E:/Projects/OpenCV/DAVIS-data/image/" + openName + ".avi");
 	videowriter.open("E:/Projects/OpenCV/DAVIS-data/image/1output.avi", CV_FOURCC('D', 'I', 'V', 'X'), 5, Size(video.get(CV_CAP_PROP_FRAME_WIDTH), video.get(CV_CAP_PROP_FRAME_HEIGHT)));
 	//Mat tureMask = imread("E:/Projects/OpenCV/DAVIS-data/image/00004.png", 0);
-	//CAP_PROP_FRAME_COUNTCompatTelRunner
-	for (int i = 0;i < 240;i++) {
+	
+	/*for (int i = 0;i < 240;i++) {
 		Mat imgSrc;
 		video.read(imgSrc);
-	}
+	}*/
 
 	for (int times = 0; times < 1; times++)
 	{
-		int key[8] = { 3,23,43,63};
+		int key[8] = { 2,22,42,62};
 		for (int i = 0;i < 65;i++) {
 			Mat imgSrc;
 			if (video.read(imgSrc)) {
@@ -481,7 +481,7 @@ int main() {
 					medianBlur(mask, maskBlur, 5);
 					imgSrcArr[t].copyTo(lastImg, maskBlur);
 
-					string name = "E:/Projects/OpenCV/DAVIS-data/image/output/01/第" + to_string(t + 1) + "帧.bmp";
+					string name = "E:/Projects/OpenCV/DAVIS-data/image/output/01/result第" + to_string(t + 1) + "帧.bmp";
 					imwrite(name, lastImg);
 
 					//Mat img3(imgSrcArr[t].size(), CV_8UC3, cv::Scalar(0, 0, 0));
@@ -493,6 +493,20 @@ int main() {
 				_time1 = (static_cast<double>(getTickCount()) - _time1) / getTickFrequency();
 				printf("滤波用时为%f\n", _time1);//显示时间
 
+				std::vector<Mat>  gmmProMaskArr, keyProMaskArr, totalProMaskArr;
+				bilateral.getGmmProMask(gmmProMaskArr);
+				bilateral.getKeyProMask(keyProMaskArr);
+				bilateral.getTotalProMask(totalProMaskArr);
+				for (int t = 0; t < imgSrcArr.size(); t++)
+				{					
+					string gName = "E:/Projects/OpenCV/DAVIS-data/image/output/01/gmmPro第" + to_string(t + 1) + "帧.bmp";
+					imwrite(gName, gmmProMaskArr[t]);
+					string kName = "E:/Projects/OpenCV/DAVIS-data/image/output/01/keyPro第" + to_string(t + 1) + "帧.bmp";
+					imwrite(kName, keyProMaskArr[t]);
+					string tName = "E:/Projects/OpenCV/DAVIS-data/image/output/01/totalPro第" + to_string(t + 1) + "帧.bmp";
+					imwrite(tName, totalProMaskArr[t]);
+				}
+
 				//清除容器，释放内存
 				for (int i = imgSrcArr.size() - 1;i >= 0;i--) {
 					imgSrcArr[i].release();
@@ -500,8 +514,9 @@ int main() {
 				imgSrcArr.clear();
 				for (int i = maskArr.size() - 1;i >= 0;i--) {
 					maskArr[i].release();
+					gmmProMaskArr[i].release(); keyProMaskArr[i].release(); totalProMaskArr[i].release();;
 				}
-				maskArr.clear();
+				maskArr.clear();gmmProMaskArr.clear(); keyProMaskArr.clear(); totalProMaskArr.clear();
 				printf("第%d段分割结束\n", times + 1);
 				
 				//videowriter.release();

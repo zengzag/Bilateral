@@ -20,13 +20,16 @@ class Bilateral
 public:
 	std::vector<Mat> imgSrcArr;	 //输入图片数据
 	std::vector<Mat> bgModelArr, fgModelArr, unModelArr;	//前背景高斯模型
-	Mat grid,gridColor;	//升维，平均取点，得到的grid。6维数组，保存顶点值与邻近像素点总数。
+	Mat grid,gridColor, gridProbable;	//升维，平均取点，得到的grid。6维数组，保存顶点值与邻近像素点总数。
 	const int gridSize[6] = { 13,30,50,16,16,16 };	//grid各个维度的大小,按顺序来为：t,x,y,r,g,b。
 public:
 	Bilateral(std::vector<Mat> img);
 	~Bilateral();
 	void InitGmms(std::vector<Mat>& , int*);
 	void run(std::vector<Mat>& );
+	void getGmmProMask(std::vector<Mat>&);
+	void getKeyProMask(std::vector<Mat>&);
+	void getTotalProMask(std::vector<Mat>&);
 private:
 	void initGrid();
 	void constructGCGraph(GCGraph<double>& graph);

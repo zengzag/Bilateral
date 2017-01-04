@@ -197,8 +197,8 @@ void Bilateral::initGrid() {
 
 	Mat L(6, gridSize, CV_32SC(4), Scalar(0, 0, 0, -1));
 	Mat C(6, gridSize, CV_32FC(3), Scalar::all(0));
-	grid = L;
-	gridColor = C;
+	Mat P(6, gridSize, CV_32FC(3), Scalar::all(0));
+	grid = L;gridColor = C;gridProbable = P;
 	int tSize = imgSrcArr.size();
 	int xSize = imgSrcArr[0].rows;
 	int ySize = imgSrcArr[0].cols;
@@ -313,14 +313,18 @@ void Bilateral::constructGCGraph(GCGraph<double>& graph) {
 									double un = unGMM(color);//颜色模型的可信度,越大越不可信。
 									unWeight = 1.0 - (un / (bgd + fgd + un));//颜色模型权重。
 									double sumWeight = abs(bSum - fSum) / (bSum + fSum + 1.0);//标记权重
-									if (unWeight < 0.5) {
+									/*if (unWeight < 0.5) {
 										bgd = fgd;
 										eCount3++;
-									}
+									}*/
 									//unWeight = 0.5;	sumWeight = 0.5;
-									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1.0) / (fSum + bSum + 1.0))*sumWeight)*sqrt(pixCount);
-									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1.0) / (fSum + bSum + 1.0))*sumWeight)*sqrt(pixCount);
+									gridProbable.at<Vec3f>(point)[0] = fgd / (bgd + fgd);
+									gridProbable.at<Vec3f>(point)[1] = (fSum + 1.0) / (fSum + bSum + 2.0);//概率可视化
+									
+									fromSource = (-log(bgd / (bgd + fgd))*unWeight - log((bSum + 1.0) / (fSum + bSum + 2.0))*sumWeight)*sqrt(pixCount);
+									toSink = (-log(fgd / (bgd + fgd))*unWeight - log((fSum + 1.0) / (fSum + bSum + 2.0))*sumWeight)*sqrt(pixCount);
 
+									gridProbable.at<Vec3f>(point)[2] = (fromSource) / (fromSource + toSink);
 								}
 								graph.addTermWeights(vtxIdx, fromSource, toSink);
 
@@ -505,7 +509,83 @@ void Bilateral::getColor() {
 	f1.close();
 }
 
+void Bilateral::getGmmProMask(std::vector<Mat>& maskArr) {
+	for (int i = 0; i < imgSrcArr.size(); i++)
+	{
+		Mat mask = Mat::zeros(imgSrcArr[0].rows, imgSrcArr[0].cols, CV_8UC1);
+		maskArr.push_back(mask);
+	}
+	int tSize = maskArr.size();
+	int xSize = imgSrcArr[0].rows;
+	int ySize = imgSrcArr[0].cols;
+	for (int t = 0; t < tSize; t++)
+	{
+		for (int y = 0; y < ySize; y++)
+		{
+#pragma omp parallel for
+			for (int x = 0; x < xSize; x++)
+			{
+				Point p(x, y);
+				int point[6] = { 0,0,0,0,0,0 };
+				getGridPoint(t, p, point, tSize, xSize, ySize);
+				float probable = gridProbable.at<Vec3f>(point)[0];
+				maskArr[t].at<uchar>(p.x, p.y) = (uchar)(probable*255);
+			}
+		}
+	}
+}
 
+void Bilateral::getKeyProMask(std::vector<Mat>& maskArr) {
+	for (int i = 0; i < imgSrcArr.size(); i++)
+	{
+		Mat mask = Mat::zeros(imgSrcArr[0].rows, imgSrcArr[0].cols, CV_8UC1);
+		maskArr.push_back(mask);
+	}
+	int tSize = maskArr.size();
+	int xSize = imgSrcArr[0].rows;
+	int ySize = imgSrcArr[0].cols;
+	for (int t = 0; t < tSize; t++)
+	{
+		for (int y = 0; y < ySize; y++)
+		{
+#pragma omp parallel for
+			for (int x = 0; x < xSize; x++)
+			{
+				Point p(x, y);
+				int point[6] = { 0,0,0,0,0,0 };
+				getGridPoint(t, p, point, tSize, xSize, ySize);
+				float probable = gridProbable.at<Vec3f>(point)[1];
+				maskArr[t].at<uchar>(p.x, p.y) = (uchar)(probable * 255);
+			}
+		}
+	}
+}
+
+void Bilateral::getTotalProMask(std::vector<Mat>& maskArr) {
+	for (int i = 0; i < imgSrcArr.size(); i++)
+	{
+		Mat mask = Mat::zeros(imgSrcArr[0].rows, imgSrcArr[0].cols, CV_8UC1);
+		maskArr.push_back(mask);
+	}
+	int tSize = maskArr.size();
+	int xSize = imgSrcArr[0].rows;
+	int ySize = imgSrcArr[0].cols;
+	for (int t = 0; t < tSize; t++)
+	{
+		for (int y = 0; y < ySize; y++)
+		{
+#pragma omp parallel for
+			for (int x = 0; x < xSize; x++)
+			{
+				Point p(x, y);
+				int point[6] = { 0,0,0,0,0,0 };
+				getGridPoint(t, p, point, tSize, xSize, ySize);
+				float probable = gridProbable.at<Vec3f>(point)[2];
+				maskArr[t].at<uchar>(p.x, p.y) = (uchar)(probable * 255);
+			}
+		}
+	}
+}
 
 
 void Bilateral::run(std::vector<Mat>& maskArr) {
@@ -519,6 +599,5 @@ void Bilateral::run(std::vector<Mat>& maskArr) {
 	constructGCGraph(graph);
 	//getColor();
 	estimateSegmentation(graph, maskArr);
-
 
 }
